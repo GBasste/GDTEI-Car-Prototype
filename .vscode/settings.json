@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "camaras": "cpp"
+        "camaras": "cpp",
+        "*.motores": "cpp"
     }
 }
