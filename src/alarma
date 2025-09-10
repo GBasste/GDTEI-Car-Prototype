@@ -1,0 +1,295 @@
+#include <iostream>
+#include <thread>
+#include <chrono>
+#include <vector>
+#include <csignal>
+#include <cmath>
+
+// Variable global para manejo de señales
+volatile bool program_running = true;
+
+// Simulación de Pin GPIO para C++ estándar
+class Pin {
+private:
+    int pin_number;
+    bool is_output;
+    bool state;
+    
+public:
+    static const bool OUT = true;
+    static const bool IN = false;
+    
+    Pin(int pin, bool mode) : pin_number(pin), is_output(mode), state(false) {
+        std::cout << "Pin " << pin_number << " configurado como " 
+                  << (mode ? "OUTPUT" : "INPUT") << std::endl;
+    }
+    
+    void on() {
+        if (is_output) {
+            state = true;
+            std::cout << "Pin " << pin_number << " -> ON" << std::endl;
+        }
+    }
+    
+    void off() {
+        if (is_output) {
+            state = false;
+            std::cout << "Pin " << pin_number << " -> OFF" << std::endl;
+        }
+    }
+    
+    bool get_state() const {
+        return state;
+    }
+};
+
+// Simulación de PWM para C++ estándar
+class PWM {
+private:
+    Pin& pin;
+    int frequency;
+    int duty_cycle;
+    bool active;
+    
+public:
+    PWM(Pin& p) : pin(p), frequency(1000), duty_cycle(0), active(false) {
+        std::cout << "PWM inicializado" << std::endl;
+    }
+    
+    void freq(int f) {
+        frequency = f;
+        std::cout << "PWM frecuencia: " << frequency << " Hz" << std::endl;
+    }
+    
+    void duty(int d) {
+        duty_cycle = d;
+        if (d > 0) {
+            active = true;
+            std::cout << "PWM duty: " << duty_cycle << "/1023 (" 
+                      << (float(d)/1023.0f*100) << "%) - Frecuencia: " << frequency << " Hz" << std::endl;
+        } else {
+            active = false;
+            std::cout << "PWM: OFF" << std::endl;
+        }
+    }
+    
+    bool is_active() const {
+        return active;
+    }
+    
+    int get_frequency() const {
+        return frequency;
+    }
+};
+
+// Funciones de delay
+void delay_ms(int milliseconds) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
+}
+
+void delay_s(float seconds) {
+    int milliseconds = static_cast<int>(seconds * 1000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
+}
+
+// === CONFIGURACIÓN GLOBAL ===
+Pin buzzer_pin(27, Pin::OUT);
+Pin led_pin(14, Pin::OUT);
+PWM buzzer_pwm(buzzer_pin);
+
+// === FUNCIONES DEL BUZZER ===
+
+void beep_simple(float duration = 0.5f) {
+    /**Sonido simple encendido/apagado**/
+    buzzer_pin.on();
+    delay_s(duration);
+    buzzer_pin.off();
+    delay_s(0.1f);
+}
+
+void beep_tone(int frequency, float duration, int duty = 512) {
+    /**Generar tono con frecuencia específica usando PWM**/
+    buzzer_pwm.freq(frequency);
+    buzzer_pwm.duty(duty);  // duty de 0-1023 (512 = 50%)
+    delay_s(duration);
+    buzzer_pwm.duty(0);  // Silencio
+}
+
+void play_note(int frequency, float duration) {
+    /**Tocar una nota musical**/
+    if (frequency > 0) {
+        beep_tone(frequency, duration);
+    } else {
+        delay_s(duration);  // Pausa/silencio
+    }
+    delay_s(0.05f);  // Pequeña pausa entre notas
+}
+
+void play_melody() {
+    /**Tocar una melodía simple**/
+    // Frecuencias de notas musicales (Do, Re, Mi, Fa, Sol, La, Si, Do)
+    std::vector<int> melody = {262, 294, 330, 349, 392, 440, 494, 523};
+    
+    std::cout << "Tocando melodía..." << std::endl;
+    for (int note : melody) {
+        if (!program_running) break;
+        play_note(note, 0.3f);
+    }
+}
+
+void play_mario_theme() {
+    /**Tema clásico de Mario Bros (fragmento)**/
+    std::vector<int> mario_notes = {
+        659, 659, 0, 659, 0, 523, 659, 0, 784,
+        392, 0, 523, 0, 392, 0, 330, 0, 440,
+        0, 494, 0, 466, 440, 0, 392, 659, 784, 880
+    };
+    
+    std::vector<float> mario_durations = {
+        0.15f, 0.15f, 0.15f, 0.15f, 0.15f, 0.15f, 0.15f, 0.15f, 0.3f,
+        0.3f, 0.15f, 0.3f, 0.15f, 0.3f, 0.15f, 0.3f, 0.15f, 0.3f,
+        0.15f, 0.3f, 0.15f, 0.15f, 0.3f, 0.15f, 0.3f, 0.15f, 0.15f, 0.15f
+    };
+    
+    std::cout << "Tocando tema de Mario..." << std::endl;
+    for (size_t i = 0; i < mario_notes.size() && i < mario_durations.size(); ++i) {
+        if (!program_running) break;
+        play_note(mario_notes[i], mario_durations[i]);
+    }
+}
+
+void alarm() {
+    /**Sonido de alarma alternante**/
+    std::cout << "¡ALARMA!" << std::endl;
+    for (int i = 0; i < 10 && program_running; ++i) {
+        beep_tone(2000, 0.15f);
+        beep_tone(1000, 0.15f);
+    }
+}
+
+void buzz_on() {
+    /**Encender buzzer continuo**/
+    buzzer_pin.on();
+    std::cout << "Buzzer continuo ON" << std::endl;
+}
+
+void buzz_off() {
+    /**Apagar buzzer**/
+    buzzer_pin.off();
+    buzzer_pwm.duty(0);
+    std::cout << "Buzzer OFF" << std::endl;
+}
+
+void cleanup() {
+    /**Limpiar y apagar buzzer**/
+    buzzer_pwm.duty(0);
+    buzzer_pin.off();
+    std::cout << "Buzzer apagado" << std::endl;
+}
+
+// Manejador de señales para Ctrl+C
+void signal_handler(int signal) {
+    if (signal == SIGINT) {
+        std::cout << "\nInterrumpido por el usuario" << std::endl;
+        program_running = false;
+        cleanup();
+        exit(0);
+    }
+}
+
+void ejecutar_prueba_buzzer() {
+    /**Función principal de prueba**/
+    
+    // Configurar manejador de señales
+    std::signal(SIGINT, signal_handler);
+    
+    std::cout << "=== PRUEBA AUTOMÁTICA DEL BUZZER ===" << std::endl;
+    
+    try {
+        led_pin.on();
+        std::cout << "LED encendido por 3 segundos..." << std::endl;
+        delay_s(3);
+
+        std::cout << "Iniciando alarma..." << std::endl;
+        alarm();
+        
+        delay_s(3);
+        led_pin.off();
+        std::cout << "LED apagado" << std::endl;
+        
+        std::cout << "\nPrueba completada exitosamente" << std::endl;
+        
+    } catch (const std::exception& e) {
+        std::cout << "Error durante la ejecución: " << e.what() << std::endl;
+    }
+    
+    cleanup();
+}
+
+// Funciones adicionales para testing manual
+void menu_interactivo() {
+    /**Menú interactivo para probar diferentes funciones**/
+    
+    int opcion;
+    
+    while (program_running) {
+        std::cout << "\n=== MENÚ BUZZER ===" << std::endl;
+        std::cout << "1. Beep simple" << std::endl;
+        std::cout << "2. Tono personalizado" << std::endl;
+        std::cout << "3. Melodía simple" << std::endl;
+        std::cout << "4. Tema Mario" << std::endl;
+        std::cout << "5. Alarma" << std::endl;
+        std::cout << "6. Buzzer continuo ON" << std::endl;
+        std::cout << "7. Buzzer OFF" << std::endl;
+        std::cout << "0. Salir" << std::endl;
+        std::cout << "Opción: ";
+        
+        std::cin >> opcion;
+        
+        switch (opcion) {
+            case 1:
+                beep_simple();
+                break;
+            case 2:
+                std::cout << "Tono de prueba 1000Hz por 1 segundo..." << std::endl;
+                beep_tone(1000, 1.0f);
+                break;
+            case 3:
+                play_melody();
+                break;
+            case 4:
+                play_mario_theme();
+                break;
+            case 5:
+                alarm();
+                break;
+            case 6:
+                buzz_on();
+                break;
+            case 7:
+                buzz_off();
+                break;
+            case 0:
+                program_running = false;
+                break;
+            default:
+                std::cout << "Opción inválida" << std::endl;
+        }
+    }
+    
+    cleanup();
+}
+
+// Función principal
+int main() {
+    std::cout << "=== CONTROL DE BUZZER C++ ===" << std::endl;
+    std::cout << "Configurando pines..." << std::endl;
+    
+    // Ejecutar prueba automática
+    ejecutar_prueba_buzzer();
+    
+    // Opcional: descomentar para menú interactivo
+    // menu_interactivo();
+    
+    return 0;
+}
