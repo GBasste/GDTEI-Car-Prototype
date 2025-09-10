@@ -1,0 +1,103 @@
+#include <iostream>
+#include <thread>
+#include <chrono>
+
+// Simulación de pines GPIO para C++ estándar
+// En un sistema real, usarías una librería como wiringPi, pigpio, etc.
+class Pin {
+private:
+    int pin_number;
+    bool state;
+    
+public:
+    Pin(int pin) : pin_number(pin), state(false) {
+        std::cout << "Pin " << pin_number << " inicializado" << std::endl;
+    }
+    
+    void on() {
+        state = true;
+        std::cout << "Pin " << pin_number << " -> HIGH" << std::endl;
+    }
+    
+    void off() {
+        state = false;
+        std::cout << "Pin " << pin_number << " -> LOW" << std::endl;
+    }
+    
+    bool get_state() const {
+        return state;
+    }
+};
+
+// Función para delay en milisegundos
+void delay_ms(int milliseconds) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
+}
+
+// Función para delay en segundos
+void delay_s(int seconds) {
+    std::this_thread::sleep_for(std::chrono::seconds(seconds));
+}
+
+// Declaración de pines
+Pin in1(32);
+Pin in2(33);
+Pin in3(25);
+Pin in4(26);
+
+void test_motor_simple() {
+    std::cout << "=== TEST SIMPLE ===" << std::endl;
+
+    // Todo apagado
+    in1.off();
+    in2.off();
+    in3.off();
+    in4.off();
+
+    std::cout << "1. Todo apagado" << std::endl;
+    delay_s(10);
+
+    // Dirección 1
+    std::cout << "2. Probando dirección 1..." << std::endl;
+    in1.on();
+    in2.off();
+    in3.on();
+    in4.off();
+
+    delay_s(10);
+
+    // Parar
+    in1.off();
+    in2.off();
+    in3.off();
+    in4.off();
+    std::cout << "3. Parado" << std::endl;
+    delay_s(10);
+
+    // Dirección 2
+    std::cout << "4. Probando dirección 2..." << std::endl;
+    in1.off();
+    in2.on();
+    in3.off();
+    in4.on();
+    delay_s(10);
+
+    std::cout << "2. Probando dirección 1..." << std::endl;
+    in1.on();
+    in2.off();
+    in3.on();
+    in4.off();
+
+    delay_s(10);
+
+    std::cout << "\n¿Se movió el motor? Si no:" << std::endl;
+    std::cout << "- Revisar alimentación 12V" << std::endl;
+    std::cout << "- Revisar jumper ENA" << std::endl;
+    std::cout << "- Revisar cables OUT1/OUT2" << std::endl;
+}
+
+// Función principal para testing (opcional)
+int main() {
+    test_motor_simple();
+    return 0;
+}
