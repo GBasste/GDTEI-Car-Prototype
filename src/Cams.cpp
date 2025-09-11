@@ -4,8 +4,8 @@
 #include "base64.h"  // Para codificar imagen
 
 // WiFi
-const char* ssid = "Kevin";
-const char* password = "     ";
+const char* ssid = "Airtel-E5573-7A7B";
+const char* password = "9f12i2f2";
 
 // WebSocket
 WebSocketsClient webSocket;
