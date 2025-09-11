@@ -86,9 +86,9 @@ void CamConfig() {
   }
 
   // WebSocket al servidor Node-RED
-  webSocket.begin("34.172.41.136", 1880, "/ws-cam"); // Interior
-  webSocket.begin("34.172.41.136", 1880, "/ws-camfront"); // Frente
-  webSocket.begin("34.172.41.136", 1880, "/ws-camrear"); // Atras
+  webSocket.begin("165.22.38.176", 1880, "/ws-cam"); // Interior
+  webSocket.begin("165.22.38.176", 1880, "/ws-camfront"); // Frente
+  webSocket.begin("165.22.38.176", 1880, "/ws-camrear"); // Atras
   webSocket.onEvent(webSocketEvent);
   webSocket.setReconnectInterval(5000);
 }
