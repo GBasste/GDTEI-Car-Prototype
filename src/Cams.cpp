@@ -68,6 +68,10 @@ camera_config_t config = {
   .fb_count       = 2
 };
 
+// Declaración de funciones
+void webSocketEvent(WStype_t type, uint8_t * payload, size_t length);
+void sendImage();
+
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   switch(type) {
     case WStype_DISCONNECTED:
