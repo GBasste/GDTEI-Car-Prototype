@@ -1,7 +1,7 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 #include <WebSocketsClient.h>
-#include "base64.h"  // Para codificar imagen
+#include "base64.h"
 
 // WiFi
 const char* ssid = "Airtel-E5573-7A7B";
@@ -10,7 +10,20 @@ const char* password = "9f12i2f2";
 // WebSocket
 WebSocketsClient webSocket;
 
-// Pines cámara AI Thinker
+// CONFIGURACIÓN PARA CADA CÁMARA - CAMBIAR SEGÚN LA CÁMARA:
+// Para Cámara Frontal:
+const char* websocket_path = "/ws-cam-front";
+const char* camera_name = "Frontal";
+
+// Para Cámara Interior - descomenta estas líneas y comenta las de arriba:
+// const char* websocket_path = "/ws-cam-inside";
+// const char* camera_name = "Interior";
+
+// Para Cámara Trasera - descomenta estas líneas y comenta las de arriba:
+// const char* websocket_path = "/ws-cam-rear";
+// const char* camera_name = "Trasera";
+
+// Pines cámara AI Thinker (estándar)
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1
 #define XCLK_GPIO_NUM      0
@@ -29,7 +42,7 @@ WebSocketsClient webSocket;
 #define PCLK_GPIO_NUM     22
 
 // Configuración cámara
-camera_config_t camera_config = {
+camera_config_t config = {
   .pin_pwdn       = PWDN_GPIO_NUM,
   .pin_reset      = RESET_GPIO_NUM,
   .pin_xclk       = XCLK_GPIO_NUM,
@@ -50,69 +63,95 @@ camera_config_t camera_config = {
   .ledc_timer     = LEDC_TIMER_0,
   .ledc_channel   = LEDC_CHANNEL_0,
   .pixel_format   = PIXFORMAT_JPEG,
-  .frame_size     = FRAMESIZE_QVGA,     // Mejora resolución
-  .jpeg_quality   = 10,                 // Calidad media
-  .fb_count       = 1
+  .frame_size     = FRAMESIZE_QVGA,    // 320x240
+  .jpeg_quality   = 12,                // Calidad (1-63, menor = mejor)
+  .fb_count       = 2
 };
 
-// Evento WebSocket
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
-  if (type == WStype_CONNECTED) {
-    Serial.println("WebSocket conectado");
-  } else if (type == WStype_DISCONNECTED) {
-    Serial.println("WebSocket desconectado");
+  switch(type) {
+    case WStype_DISCONNECTED:
+      Serial.printf("[%s] WebSocket Desconectado\n", camera_name);
+      break;
+      
+    case WStype_CONNECTED:
+      Serial.printf("[%s] ✅ WebSocket Conectado a: %s\n", camera_name, payload);
+      break;
+      
+    case WStype_TEXT:
+      Serial.printf("[%s] Mensaje recibido: %s\n", camera_name, payload);
+      break;
+      
+    default:
+      break;
   }
 }
 
-void CamConfig() {
+void setup() {
   Serial.begin(115200);
   delay(1000);
+  
+  Serial.printf("Inicializando ESP32-CAM %s\n", camera_name);
 
-  // Conexión WiFi
+  // Conectar WiFi
   WiFi.begin(ssid, password);
-  Serial.print("Conectando a WiFi");
+  Serial.print("Conectando WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("\n WiFi conectado");
-  Serial.print("IP local: ");
-  Serial.println(WiFi.localIP());
+  Serial.println();
+  Serial.printf("✅ WiFi conectado - IP: %s\n", WiFi.localIP().toString().c_str());
 
   // Inicializar cámara
-  if (esp_camera_init(&camera_config) != ESP_OK) {
-    Serial.println("Error al inicializar cámara");
+  esp_err_t err = esp_camera_init(&config);
+  if (err != ESP_OK) {
+    Serial.printf("❌ Error inicializando cámara: 0x%x\n", err);
+    return;
+  }
+  Serial.printf("✅ Cámara %s inicializada\n", camera_name);
+
+  // Configurar WebSocket - CAMBIAR IP POR LA DE TU SERVIDOR NODE-RED
+  webSocket.begin("165.22.38.176", 1880, websocket_path);
+  webSocket.onEvent(webSocketEvent);
+  webSocket.setReconnectInterval(5000);
+  Serial.printf("✅ WebSocket configurado para %s\n", websocket_path);
+}
+
+void loop() {
+  webSocket.loop();
+
+  // Enviar imagen cada 333ms (~3 FPS)
+  static unsigned long lastCapture = 0;
+  if (millis() - lastCapture > 333) {
+    lastCapture = millis();
+    
+    if (webSocket.isConnected()) {
+      sendImage();
+    }
+  }
+}
+
+void sendImage() {
+  // Capturar imagen
+  camera_fb_t * fb = esp_camera_fb_get();
+  if (!fb) {
+    Serial.printf("[%s] ❌ Error capturando imagen\n", camera_name);
     return;
   }
 
-  // WebSocket al servidor Node-RED
-  webSocket.begin("165.22.38.176", 1880, "/ws-cam"); // Interior
-  webSocket.begin("165.22.38.176", 1880, "/ws-camfront"); // Frente
-  webSocket.begin("165.22.38.176", 1880, "/ws-camrear"); // Atras
-  webSocket.onEvent(webSocketEvent);
-  webSocket.setReconnectInterval(5000);
-}
-
-void Camexe() {
-  webSocket.loop();
-
-  static unsigned long lastCapture = 0;
-  if (millis() - lastCapture > 300) { //Cada 300ms (3.3 FPS aprox)
-    lastCapture = millis();
-
-    camera_fb_t * fb = esp_camera_fb_get();
-    if (!fb) {
-      Serial.println("⚠️ Error capturando imagen");
-      return;
-    }
-
-    // Codificar en base64 y enviar
-    String imageBase64 = base64::encode(fb->buf, fb->len);
-    String fullPayload = "data:image/jpeg;base64," + imageBase64;
-
-    webSocket.sendTXT(fullPayload);
-    Serial.println("Imagen enviada");
-
-    esp_camera_fb_return(fb);
+  // Convertir a base64 - ENVIAR SOLO EL BASE64 PURO
+  String imageBase64 = base64::encode(fb->buf, fb->len);
+  
+  // Enviar por WebSocket (tu función Node-RED agrega el data:image/jpeg;base64,)
+  bool sent = webSocket.sendTXT(imageBase64);
+  
+  if (sent) {
+    Serial.printf("[%s] ✅ Imagen enviada (%d bytes)\n", camera_name, fb->len);
+  } else {
+    Serial.printf("[%s] ❌ Error enviando imagen\n", camera_name);
   }
+
+  // Liberar memoria
+  esp_camera_fb_return(fb);
 }
