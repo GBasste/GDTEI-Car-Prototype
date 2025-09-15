@@ -81,7 +81,7 @@ void setup() {
   Serial.printf("✓ WiFi conectado: %s\n", WiFi.localIP().toString().c_str());
   
   // WebSocket
-  webSocket.begin("34.172.41.136", 1880, "/ws/sensores");
+  webSocket.begin("165.22.38.176", 1880, "/ws-ultra-1");
   webSocket.onEvent(webSocketEvent);
   webSocket.setReconnectInterval(5000);
 }
