@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <WebSocketsClient.h>
 #include <ArduinoJson.h>
+#include "ultrasonico.h"
 
 // WiFi
 const char* ssid = "Airtel-E5573-7A7B";
