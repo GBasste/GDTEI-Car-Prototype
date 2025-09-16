@@ -2,19 +2,22 @@
 #define TXD2 17
 
 // Pines conectados a la tarjeta de relé (para movimientos adelante/atrás)
-const int RELAY_ADELANTEP = 18;
-const int RELAY_ADELANTEN = 19;
-const int RELAY_ATRASP    = 21;
-const int RELAY_ATRASN   = 22;
-const int RELAY_IZQP      = 33;
-const int RELAY_IZQN      = 32;
-const int RELAY_DERP      = 25;
-const int RELAY_DERN      = 26;
+//const int RELAY_ADELANTEP = 18;
+//const int RELAY_ADELANTEN = 19;
+//const int RELAY_ATRASP    = 21;
+//const int RELAY_ATRASN   = 22;
+//const int RELAY_IZQP      = 33;
+//const int RELAY_IZQN      = 32;
+//const int RELAY_DERP      = 25;
+//const int RELAY_DERN      = 26;
 
 // Pines para motor L298N (giros de 90°)
 const int MOTOR_L298N_IN1 = 2;   // Control dirección motor L298N
 const int MOTOR_L298N_IN2 = 15;   // Control dirección motor L298N  
 const int MOTOR_L298N_ENA = 14;   // Control velocidad PWM motor L298N
+const int MOTOR_L298N_IN3 = 2;   // Control dirección motor L298N
+const int MOTOR_L298N_IN4 = 15;   // Control dirección motor L298N  
+const int MOTOR_L298N_ENB = 14; 
 
 // Variables para control de movimientos de 90°
 unsigned long tiempoMovimiento = 1000; // Tiempo en ms para girar 90°
@@ -81,6 +84,26 @@ void detenerMotorL298N() {
   digitalWrite(MOTOR_L298N_IN2, LOW);
   analogWrite(MOTOR_L298N_ENA, 0);
 }
+void adelantePWM(int velocidad) {
+  // Activar relés para adelante
+  digitalWrite(MOTOR_L298N_IN3, LOW);
+  digitalWrite(MOTOR_L298N_IN4, HIGH);
+  
+  
+  // Aplicar PWM gradual
+  aceleracionPWM(27, 0, velocidad, 200);
+}
+
+void atrasPWM(int velocidad) {
+  // Activar relés para atrás
+  digitalWrite(MOTOR_L298N_IN3, HIGH);
+  digitalWrite(MOTOR_L298N_IN4, LOW);
+  
+  
+  // Aplicar PWM gradual
+  aceleracionPWM(27, 0, velocidad, 200);
+}
+
 
 void aceleracionPWM(int pin, int velocidadInicial, int velocidadFinal, int tiempoMs) {
   int pasos = abs(velocidadFinal - velocidadInicial);
@@ -106,16 +129,7 @@ void girarMotorIzquierdaL298N() {
   analogWrite(MOTOR_L298N_ENA, velocidadMotor);
 }
 
-void activarReles(bool adp, bool adn, bool atp, bool atn, bool izqp, bool izqn, bool derp, bool dern) {
-  digitalWrite(RELAY_ADELANTEP, adp ? LOW : HIGH);
-  digitalWrite(RELAY_ADELANTEN, adn ? LOW : HIGH);
-  digitalWrite(RELAY_ATRASP,    atp ? LOW : HIGH);
-  digitalWrite(RELAY_ATRASN,    atn ? LOW : HIGH);
-  digitalWrite(RELAY_IZQP,      izqp ? LOW: HIGH);
-  digitalWrite(RELAY_IZQN,      izqn ? LOW : HIGH);
-  digitalWrite(RELAY_DERP,      derp ? LOW: HIGH);
-  digitalWrite(RELAY_DERN,      dern ? LOW : HIGH);
-}
+
 
 // Función para ir a derecha (mantiene posición)
 void comandoDerecha() {
@@ -164,7 +178,7 @@ void comandoIzquierda() {
     delay(tiempoMovimiento * 2);
     detenerMotorL298N();
     posicionActual = -20;
-  }
+  } 
   
   Serial.println("En posición izquierda - Manteniendo posición");
 }
@@ -199,10 +213,10 @@ void ejecutarComando(String cmd) {
 
   if (cmd == "adelante") {
     aceleracionPWM(27,2,50,200);
-    activarReles(true, true, false, false, false, false, false, false);
+   
   } else if (cmd == "atras") {
     aceleracionPWM(27,2,50,200);
-    activarReles(false, false, true, true, false, false, false, false);
+    
   } else if (cmd == "izquierda") {
     // Nuevo comportamiento: gira 90° izquierda y mantiene posición
     comandoIzquierda();
@@ -211,15 +225,15 @@ void ejecutarComando(String cmd) {
     // Nuevo comportamiento: gira 90° derecha y mantiene posición
     comandoDerecha();
     return; // No ejecutar apagarTodo() para este comando
-  } else if (cmd == "adelante_izquierda") {
-    activarReles(true, true, false, false, true, true, false, false);
-  } else if (cmd == "adelante_derecha") {
-    activarReles(true, true, false, false, false, false, true, true);
-  } else if (cmd == "atras_izquierda") {
-    activarReles(false, false, true, true, true, true, false, false);
-  } else if (cmd == "atras_derecha") {
-    activarReles(false, false, true, true, false, false, true, true);
-  } else {
+  } //else if (cmd == "adelante_izquierda") {
+    //activarReles(true, true, false, false, true, true, false, false);
+ // } //else if (cmd == "adelante_derecha") {
+    //activarReles(true, true, false, false, false, false, true, true);
+  //} //else if (cmd == "atras_izquierda") {
+    //activarReles(false, false, true, true, true, true, false, false);
+  //} //else if (cmd == "atras_derecha") {
+    //activarReles(false, false, true, true, false, false, true, true);
+  //} //else {
     // comando "stop" u otro no reconocido
     apagarTodo();
     detenerMotorL298N();
