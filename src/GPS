@@ -1,4 +1,4 @@
-#include "GPS.h"
+#include "gps.h"
 #include <HardwareSerial.h>
 
 // Crear una instancia de HardwareSerial para el puerto UART

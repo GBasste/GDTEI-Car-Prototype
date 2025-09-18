@@ -7,6 +7,7 @@
 #include "buzzer.h"
 #include "control_motor.h"
 #include "motor_l298n.h" // <--- Incluye el nuevo archivo
+#include "gps.h" // <--- Incluye el nuevo archivo
 
 // Declaración de funciones existentes
 void configurarSistema();
@@ -48,6 +49,8 @@ void setup() {
     // --- Configuración del módulo Motor L298N ---
     configurarMotorL298N();
     configurarUltrasonico();
+
+    configurarGps(); // <--- Llama a la nueva función de configuración
 }
 
 // Función loop()
@@ -64,10 +67,30 @@ void loop() {
     // Comenta o elimina esta sección si no la necesitas.
     testSimpleMotor();
     
+    // --- Ejemplo de uso del módulo GPS ---
+    GpsData_t datosGps = leerDatosGps();
+
+    if (datosGps.fix > 0) {
+        Serial.println("✅ Coordenadas:");
+        Serial.print("   Latitud: ");
+        Serial.println(datosGps.latitud, 6); // Muestra 6 decimales
+        Serial.print("   Longitud: ");
+        Serial.println(datosGps.longitud, 6); // Muestra 6 decimales
+        Serial.print("   Satélites: ");
+        Serial.println(datosGps.satelites);
+    } else {
+        Serial.print("❌ Sin fix aún... Satélites: ");
+        Serial.println(datosGps.satelites);
+    }
+    
+    delay(1000); // Esperar 1 segundo antes de la siguiente lectura
+    
     // Aquí puedes llamar a otras funciones de tu proyecto
     // como Camexe(), ejecutarSistema(), etc.
     // Por ejemplo:
     // Camexe();
     // ejecutarSistema();
+
+    
     
 }
