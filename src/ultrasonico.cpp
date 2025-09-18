@@ -11,11 +11,11 @@ const char* password = "9f12i2f2";
 WebSocketsClient webSocket;
 
 // Pines
-#define TRIG_FRONT 13
-#define ECHO_FRONT 12
-#define TRIG_BACK 14
-#define ECHO_BACK 27
-#define LED_PIN 4
+#define TRIG_FRONT 12
+#define ECHO_FRONT 14
+#define TRIG_BACK 5
+#define ECHO_BACK 18
+#define LED_PIN 10
 
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   switch(type) {
