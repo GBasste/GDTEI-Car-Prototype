@@ -4,7 +4,7 @@
 #include <Arduino.h>
 
 // Definiciones de canales y frecuencia
-#define BUZZER_CHANNEL 1    // Canal LEDC para el zumbador
+#define BUZZER_CHANNEL 13    // Canal LEDC para el zumbador
 #define BUZZER_RESOLUTION 10 // 10 bits de resolución (0-1023)
 
 // Declaraciones de funciones públicas
