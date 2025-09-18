@@ -1,5 +1,6 @@
 #include <Arduino.h>
 
+#include "ultrasonico.h"
 // Archivos de encabezado de tus módulos
 #include "adc_rele.h"
 #include "motor_pwm.h"
@@ -46,6 +47,7 @@ void setup() {
     
     // --- Configuración del módulo Motor L298N ---
     configurarMotorL298N();
+    configurarUltrasonico();
 }
 
 // Función loop()
@@ -55,6 +57,7 @@ void loop() {
     
     // --- Bucle del módulo Control Motor ---
     ejecutarControlMotor();
+    ejecutarUltrasonico();
     
     // --- Ejemplo de uso del módulo L298N ---
     // Puedes llamar a la función de prueba para verificar el funcionamiento
@@ -66,4 +69,5 @@ void loop() {
     // Por ejemplo:
     // Camexe();
     // ejecutarSistema();
+    
 }
