@@ -1,8 +1,8 @@
 #include <Arduino.h>
 
 void configurarSistema() {
-  pinMode(19, INPUT); // Botón de OFF (SIN pull-up, tienes divisor externo)
-  pinMode(16, OUTPUT);       // Conexión al relé activador
+  pinMode(0, INPUT); // Botón de OFF (SIN pull-up, tienes divisor externo)
+  pinMode(35, OUTPUT);       // Conexión al relé activador
   pinMode(4, INPUT); // Pulso de la huella
 
   Serial.begin(115200);

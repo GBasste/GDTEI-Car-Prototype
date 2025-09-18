@@ -3,7 +3,7 @@
 
 // Definiciones de pines y constantes
 const int PIN_ADC = 34;
-const int PIN_RELE = 26;
+const int PIN_RELE = 25;
 const float FACTOR_DIVISOR = 4.7;
 
 // Variables para el ADC y el relé
