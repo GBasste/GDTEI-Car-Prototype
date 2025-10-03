@@ -1,7 +1,6 @@
 #include <Arduino.h>
 
 // Archivos de encabezado de tus módulos
-#include "AVDC.h"
 #include "ultrasonico.h"
 
 // Declaración de funciones existentes
@@ -36,6 +35,11 @@ int desacelerarPwm(PwmState_t pwm_state, int velocidad_final, float tiempo_total
 void inicializarGPS();
 void ejecutarGPS();
 
+// --- DECLARACIONES DE FUNCIONES DE VoltageMonitor.cpp ---
+void configurarComponentes();
+void medirVoltajeYControlarRele();
+// -------------------------------------------------------
+
 // Función setup()
 void setup() {
     Serial.begin(115200);
@@ -54,6 +58,9 @@ void setup() {
     // Inicializa el puerto Serial2 para la comunicación con el GPS
     inicializarGPS(); 
 
+    // Inicializar el ADC y el pin del relé
+    configurarComponentes(); 
+
     // --- Configuración del módulo Control Motor ---
     configurarControlMotor();
     
@@ -66,8 +73,12 @@ void setup() {
 
 // Función loop()
 void loop() {
-    // --- Bucle del módulo ADC/Relé ---
-    ejecutarAdcRele();
+    // La función que mide el voltaje y controla el relé
+    medirVoltajeYControlarRele(); 
+    
+    // El delay(500) ya está incluido dentro de la función, pero 
+    // si lo quitas de VoltageMonitor.cpp, lo debes poner aquí:
+    // delay(500); 
     
     // --- Bucle del módulo Control Motor ---
     ejecutarControlMotor();
