@@ -2,7 +2,6 @@
 
 // Archivos de encabezado de tus módulos
 #include "AVDC.h"
-#include "BUZZER.h"
 #include "GPS.h" 
 #include "PWM.h"
 #include "ultrasonico.h"
@@ -18,6 +17,12 @@ void abrir_puertas();
 void apagar_motor();
 void encender_motor();
 void apagar();
+
+// --- DECLARACIONES DE FUNCIONES DE BuzzerControl.cpp ---
+void configurarBuzzer();
+void beepSimple(float duration);
+// ... (pegar el resto de las declaraciones aquí)
+void cleanupBuzzer();
 
 // Definiciones de pines y canales PWM para el motor
 const int MOTOR_PIN = 14; 
@@ -59,6 +64,9 @@ void loop() {
     // --- Bucle del módulo Control Motor ---
     ejecutarControlMotor();
     ejecutarUltrasonico();
+
+    //--- alarma ---
+    alarm();
     
     // --- Ejemplo de uso del módulo L298N ---
     // Puedes llamar a la función de prueba para verificar el funcionamiento

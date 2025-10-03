@@ -1,11 +1,14 @@
-#include "BUZZER.h"
 #include <Arduino.h>
 
-// Pines para el zumbador y el LED
+// Pines para el zumbador y el LED (constantes globales)
 const int BUZZER_PIN = 27;
 const int LED_PIN = 14;
 
-// Definiciones de notas musicales
+// Configuraciones del canal PWM (LEDC en ESP32)
+#define BUZZER_CHANNEL 0
+#define BUZZER_RESOLUTION 10 // 10 bits de resolución (0-1023)
+
+// Definiciones de notas musicales (constantes globales)
 const int NOTE_C4 = 262;
 const int NOTE_D4 = 294;
 const int NOTE_E4 = 330;
@@ -15,28 +18,48 @@ const int NOTE_A4 = 440;
 const int NOTE_B4 = 494;
 const int NOTE_C5 = 523;
 
-// Inicializa el zumbador
+// Declaración de funciones (para que puedan llamarse entre sí en cualquier orden)
+void configurarBuzzer();
+void beepSimple(float duration);
+void beepTone(int frequency, float duration);
+void playNote(int frequency, float duration);
+void playMelody();
+void playMarioTheme();
+void alarm();
+void buzzOn();
+void buzzOff();
+void cleanupBuzzer();
+
+// ------------------------------------------------------------------
+// Implementación de funciones
+// ------------------------------------------------------------------
+
+// Inicializa el zumbador y el LED
 void configurarBuzzer() {
-    ledcSetup(BUZZER_CHANNEL, 1000, BUZZER_RESOLUTION); // Frecuencia inicial 1kHz
+    // Configura el canal PWM
+    ledcSetup(BUZZER_CHANNEL, 1000, BUZZER_RESOLUTION);
+    // Asigna el pin al canal
     ledcAttachPin(BUZZER_PIN, BUZZER_CHANNEL);
-    ledcWrite(BUZZER_CHANNEL, 0); // Silencio inicial
+    // Silencio inicial
+    ledcWrite(BUZZER_CHANNEL, 0); 
+    
+    pinMode(LED_PIN, OUTPUT);
+    digitalWrite(LED_PIN, LOW);
 }
 
 // Sonido simple de encendido/apagado
 void beepSimple(float duration) {
-    ledcWrite(BUZZER_CHANNEL, 512); // Tono simple (50% duty cycle)
-    delay(duration * 1000);
-    ledcWrite(BUZZER_CHANNEL, 0);
+    beepTone(1000, duration); 
     delay(100);
 }
 
-// Genera un tono con frecuencia específica
+// Generar tono con frecuencia específica usando PWM
 void beepTone(int frequency, float duration) {
     if (frequency > 0) {
         ledcSetup(BUZZER_CHANNEL, frequency, BUZZER_RESOLUTION);
         ledcWrite(BUZZER_CHANNEL, 512); // 50% duty cycle
-        delay(duration * 1000);
-        ledcWrite(BUZZER_CHANNEL, 0);
+        delay(duration * 1000); 
+        ledcWrite(BUZZER_CHANNEL, 0); 
     } else {
         delay(duration * 1000);
     }
@@ -47,7 +70,7 @@ void playNote(int frequency, float duration) {
     if (frequency > 0) {
         beepTone(frequency, duration);
     } else {
-        delay(duration * 1000); // Pausa
+        delay(duration * 1000); // Pausa/silencio
     }
     delay(50); // Pausa entre notas
 }
@@ -70,12 +93,13 @@ void playMarioTheme() {
         392, 0, 523, 0, 392, 0, 330, 0, 440,
         0, 494, 0, 466, 440, 0, 392, 659, 784, 880
     };
+    
     float mario_durations[] = {
         0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.3,
         0.3, 0.15, 0.3, 0.15, 0.3, 0.15, 0.3, 0.15, 0.3,
         0.15, 0.3, 0.15, 0.15, 0.3, 0.15, 0.3, 0.15, 0.15, 0.15
     };
-
+    
     int notesCount = sizeof(mario_notes) / sizeof(mario_notes[0]);
 
     Serial.println("Tocando tema de Mario...");
@@ -93,19 +117,19 @@ void alarm() {
     }
 }
 
-// Encender zumbador continuo (solo se puede apagar con buzzOff o cleanup)
+// Encender buzzer continuo
 void buzzOn() {
     ledcSetup(BUZZER_CHANNEL, 1000, BUZZER_RESOLUTION);
-    ledcWrite(BUZZER_CHANNEL, 512); // Tono continuo
+    ledcWrite(BUZZER_CHANNEL, 512); 
 }
 
-// Apagar zumbador
+// Apagar buzzer
 void buzzOff() {
-    ledcWrite(BUZZER_CHANNEL, 0); // Apagar el PWM
+    ledcWrite(BUZZER_CHANNEL, 0); 
     Serial.println("Buzzer apagado");
 }
 
-// Limpiar y apagar el zumbador
+// Limpiar y apagar buzzer
 void cleanupBuzzer() {
     ledcWrite(BUZZER_CHANNEL, 0);
     ledcDetachPin(BUZZER_PIN);
