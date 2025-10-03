@@ -1,8 +1,8 @@
 #include <Arduino.h>
 
 // Archivos de encabezado de tus módulos
-#include "avdc.h"
-#include "alarma.h"
+#include "AVDC.h"
+#include "BUZZER.h"
 #include "GPS.h" // <--- Incluye el nuevo archivo
 #include "PWM.h"
 #include "ultrasonico.h"

@@ -1,4 +1,4 @@
-#include "avdc.h"
+#include "AVDC.h"
 #include <driver/adc.h>
 
 // Definiciones de pines y constantes

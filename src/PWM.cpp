@@ -1,4 +1,4 @@
-#include "motor_pwm.h"
+#include "PWM.h"
 #include <math.h>
 
 // Variables globales para los canales PWM

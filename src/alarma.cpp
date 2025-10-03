@@ -1,4 +1,4 @@
-#include "alarma.h"
+#include "BUZZER.h"
 #include <Arduino.h>
 
 // Pines para el zumbador y el LED
