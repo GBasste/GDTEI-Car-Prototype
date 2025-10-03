@@ -1,7 +1,6 @@
 #include <WiFi.h>
 #include <WebSocketsClient.h>
 #include <ArduinoJson.h>
-#include "ultrasonico.h"
 
 // WiFi
 const char* ssid = "Airtel-E5573-7A7B";
@@ -64,7 +63,7 @@ void sendData(float front, float back) {
   }
 }
 
-void setup() {
+void configurarUltrasonico() {
   Serial.begin(115200);
   
   pinMode(TRIG_FRONT, OUTPUT);
@@ -87,7 +86,7 @@ void setup() {
   webSocket.setReconnectInterval(5000);
 }
 
-void loop() {
+void ejecutarUltrasonico() {
   webSocket.loop();
   
   static unsigned long lastSend = 0;

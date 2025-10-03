@@ -1,7 +1,5 @@
 #include <Arduino.h>
 
-// Archivos de encabezado de tus módulos
-#include "ultrasonico.h"
 
 // Declaración de funciones existentes
 void configurarSistema();
@@ -39,6 +37,11 @@ void ejecutarGPS();
 void configurarComponentes();
 void medirVoltajeYControlarRele();
 // -------------------------------------------------------
+
+
+// --- ULTRASONICO ---
+void configurarUltrasonico();
+void ejecutarUltrasonico();
 
 // Función setup()
 void setup() {
