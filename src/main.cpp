@@ -1,17 +1,17 @@
 #include <Arduino.h>
 
 
-// Declaración de funciones existentes
+// Declaración de funciones de Nuevo_Interruptor.cpp ---
 void configurarSistema();
 void ejecutarSistema();
-void CamConfig();
-void Camexe();
-void motorset();
-void cerrar_puertas();
-void abrir_puertas();
-void apagar_motor();
-void encender_motor();
-void apagar();
+
+// Declaracion de funciones de Control_Motores ---
+void configurarPines();
+void cerrarPuertas();
+void abrirPuertas();
+void apagarMotor();
+void encenderMotor();
+void apagarDireccion();
 
 // --- DECLARACIONES DE FUNCIONES DE BuzzerControl.cpp ---
 void configurarBuzzer();
@@ -25,9 +25,6 @@ struct PwmState_t {
     int channel;
     int current_duty;
 }
-// Declaraciones de funciones (prototipos) de MotorControl.cpp
-PwmState_t acelerarPwm(int pin_numero, int velocidad_inicial, int velocidad_final, float tiempo_total, const char* tipo);
-int desacelerarPwm(PwmState_t pwm_state, int velocidad_final, float tiempo_total);
 
 // --- DECLARACIONES DE FUNCIONES DE GPSControl.cpp ---
 void inicializarGPS();
@@ -46,11 +43,6 @@ void ejecutarUltrasonico();
 // Función setup()
 void setup() {
     Serial.begin(115200);
-    
-    // --- Configuración de tus funciones originales ---
-    configurarSistema();
-    CamConfig();
-    motorset();
 
     // --- Configuración del módulo PWM del motor ---
     configurarPwm(MOTOR_PIN, MOTOR_CHANNEL);
@@ -64,14 +56,13 @@ void setup() {
     // Inicializar el ADC y el pin del relé
     configurarComponentes(); 
 
-    // --- Configuración del módulo Control Motor ---
-    configurarControlMotor();
+   // Inicializa todos los pines
+    configurarPines(); 
     
-    // --- Configuración del módulo Motor L298N ---
-    configurarMotorL298N();
-    configurarUltrasonico();
-
-    configurarGps(); // <--- Llama a la nueva función de configuración
+    // La acción inicial del código Python
+    encenderMotor(); // Asegura que el motor tenga alimentación
+    abrirPuertas();
+    apagarDireccion();
 }
 
 // Función loop()
@@ -83,17 +74,15 @@ void loop() {
     // si lo quitas de VoltageMonitor.cpp, lo debes poner aquí:
     // delay(500); 
     
-    // --- Bucle del módulo Control Motor ---
-    ejecutarControlMotor();
-    ejecutarUltrasonico();
+    // Control_Motores ---
+    // Tu lógica principal iría aquí, por ejemplo:
+    // Si se recibe un comando de Node-RED para cerrar:
+    // cerrarPuertas();
+    // delay(5000); // Espera a que termine de cerrar
+    // apagarDireccion();
 
     //--- alarma ---
     alarm();
-    
-    // --- Ejemplo de uso del módulo L298N ---
-    // Puedes llamar a la función de prueba para verificar el funcionamiento
-    // Comenta o elimina esta sección si no la necesitas.
-    testSimpleMotor();
     
     // La función que lee y procesa los datos NMEA
     ejecutarGPS();
