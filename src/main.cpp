@@ -3,7 +3,7 @@
 // Archivos de encabezado de tus módulos
 #include "AVDC.h"
 #include "BUZZER.h"
-#include "GPS.h" // <--- Incluye el nuevo archivo
+#include "GPS.h" 
 #include "PWM.h"
 #include "ultrasonico.h"
 
