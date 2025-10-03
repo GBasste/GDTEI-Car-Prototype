@@ -1,83 +1,136 @@
-#include "GPS.h"
-#include <HardwareSerial.h>
+#include <Arduino.h>
 
-// Crear una instancia de HardwareSerial para el puerto UART
-HardwareSerial SerialGPS(2); // Utiliza el puerto UART 2
+// Definiciones de pines UART para el GPS
+// En ESP32, usamos Serial2 para un puerto UART adicional.
+const int GPS_RX_PIN = 16;
+const int GPS_TX_PIN = 17;
+const long GPS_BAUDRATE = 9600;
 
-// Función privada para convertir las coordenadas de DMS a decimal
+// Declaraciones de funciones
+float convertirADecimal(String coord, char direccion);
+String leerLineaGPS();
+bool extraerCoordenadasGPGGA(String linea, float &latitud, float &longitud, int &fixStatus, int &satelites);
+void inicializarGPS();
+void ejecutarGPS();
+
+// ------------------------------------------------------------------
+// Implementación de funciones
+// ------------------------------------------------------------------
+
+// Inicializa el puerto Serial2 para el módulo GPS
+void inicializarGPS() {
+    Serial2.begin(GPS_BAUDRATE, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
+    Serial.println("🛰️ Esperando datos GPS...");
+}
+
+// Función auxiliar para convertir DDMM.MMMM (Grados Minutos) a grados decimales
 float convertirADecimal(String coord, char direccion) {
-    // Busca el punto decimal
-    int dotIndex = coord.indexOf('.');
-    if (dotIndex == -1) {
-        return 0.0;
-    }
+    if (coord.length() < 5) return 0.0;
     
-    // Extrae los grados y minutos como strings
-    String degreesStr = coord.substring(0, dotIndex - 2);
-    String minutesStr = coord.substring(dotIndex - 2);
-
-    // Convierte a números flotantes
-    float grados = degreesStr.toFloat();
-    float minutos = minutesStr.toFloat();
+    // Encuentra la posición del punto decimal
+    int pointIndex = coord.indexOf('.');
+    if (pointIndex == -1) return 0.0;
     
-    float decimal = grados + (minutos / 60.0);
+    // Extraer los grados (DD o DDD)
+    String degreesStr = coord.substring(0, pointIndex - 2);
+    float degrees = degreesStr.toFloat();
     
-    // Aplica el signo según la dirección
+    // Extraer los minutos (MM.MMMM)
+    String minutesStr = coord.substring(pointIndex - 2);
+    float minutes = minutesStr.toFloat();
+    
+    float decimal = degrees + minutes / 60.0;
+    
+    // Aplicar dirección (N/S, E/W)
     if (direccion == 'S' || direccion == 'W') {
         decimal = -decimal;
     }
     return decimal;
 }
 
-// Función de configuración inicial del módulo GPS
-void configurarGps() {
-    SerialGPS.begin(GPS_BAUDRATE, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
-    Serial.println("🛰️ Esperando datos GPS...");
+// Lee una línea completa del buffer serial (equivalente a uart.readline())
+String leerLineaGPS() {
+    if (Serial2.available()) {
+        String linea = Serial2.readStringUntil('\n');
+        linea.trim(); // Quita espacios y retornos de carro
+        // El ESP32 maneja la codificación UTF-8 por defecto, así que no es necesario decode()
+        return linea;
+    }
+    return ""; // Retorna String vacío si no hay datos
 }
 
-// Función para leer y procesar una línea del GPS
-GpsData_t leerDatosGps() {
-    GpsData_t gpsData = {0.0, 0.0, 0, 0}; // Inicializar con valores por defecto
+// Procesa una línea GPGGA para extraer coordenadas (equivalente a extraer_coordenadas_GPGGA)
+// Nota: Usa referencias (&) para actualizar los valores de latitud, longitud, etc.
+bool extraerCoordenadasGPGGA(String linea, float &latitud, float &longitud, int &fixStatus, int &satelites) {
+    if (!linea.startsWith("$GPGGA")) {
+        return false;
+    }
+    
+    // El método split() no es estándar en Arduino String, usamos indexOf y substring.
+    int startIndex = 0;
+    int commaIndex = -1;
+    
+    // Partes: $GPGGA, [1] Hora, [2] Lat, [3] N/S, [4] Lon, [5] E/W, [6] Fix, [7] Satelites
+    String partes[15]; // Solo necesitamos hasta el índice 7
+    int partCount = 0;
 
-    // Si hay datos disponibles en el puerto serie
-    if (SerialGPS.available()) {
-        String linea = SerialGPS.readStringUntil('\n');
-        linea.trim(); // Eliminar espacios en blanco y saltos de línea
+    for (int i = 0; i < 15; i++) {
+        commaIndex = linea.indexOf(',', startIndex);
+        if (commaIndex == -1) {
+            partes[i] = linea.substring(startIndex);
+            partCount = i + 1;
+            break;
+        }
+        partes[i] = linea.substring(startIndex, commaIndex);
+        startIndex = commaIndex + 1;
+        partCount = i + 1;
+    }
+    
+    // Verificar que tenemos suficientes partes y que los campos 2, 4, 6 y 7 no están vacíos
+    if (partCount < 8 || partes[2].isEmpty() || partes[4].isEmpty() || partes[6].isEmpty() || partes[7].isEmpty()) {
+        return false;
+    }
 
-        // Si la línea es GPGGA, procesarla
-        if (linea.startsWith("$GPGGA")) {
-            // Dividir la línea por comas
-            int lastIndex = 0;
-            int count = 0;
-            int commaIndices[20]; // Un array para almacenar las posiciones de las comas
+    // [2] Latitud, [3] Dirección Lat
+    latitud = convertirADecimal(partes[2], partes[3].charAt(0));
+    
+    // [4] Longitud, [5] Dirección Lon
+    longitud = convertirADecimal(partes[4], partes[5].charAt(0));
+    
+    // [6] Estado de Fix (0=No fix, 1=GPS fix, etc.)
+    fixStatus = partes[6].toInt();
+    
+    // [7] Número de satélites
+    satelites = partes[7].toInt();
+    
+    return true;
+}
 
-            for (int i = 0; i < linea.length(); i++) {
-                if (linea.charAt(i) == ',') {
-                    commaIndices[count] = i;
-                    count++;
-                }
-            }
 
-            // Asegurarse de que haya suficientes partes
-            if (count > 6) {
-                // Extraer la latitud, dirección, longitud, dirección, fix y satélites
-                String latStr = linea.substring(commaIndices[1] + 1, commaIndices[2]);
-                char latDir = linea.charAt(commaIndices[2] + 1);
-                String lonStr = linea.substring(commaIndices[3] + 1, commaIndices[4]);
-                char lonDir = linea.charAt(commaIndices[4] + 1);
-                String fixStr = linea.substring(commaIndices[5] + 1, commaIndices[6]);
-                String satsStr = linea.substring(commaIndices[6] + 1, commaIndices[7]);
-
-                // Convertir los datos
-                gpsData.fix = fixStr.toInt();
-                gpsData.satelites = satsStr.toInt();
-
-                if (gpsData.fix > 0) {
-                    gpsData.latitud = convertirADecimal(latStr, latDir);
-                    gpsData.longitud = convertirADecimal(lonStr, lonDir);
-                }
+// Bucle de ejecución principal para el GPS (para llamar desde loop())
+void ejecutarGPS() {
+    String linea = leerLineaGPS();
+    
+    if (!linea.isEmpty()) {
+        float lat, lon;
+        int fix, sats;
+        
+        if (extraerCoordenadasGPGGA(linea, lat, lon, fix, sats)) {
+            
+            if (fix == 0) {
+                Serial.print("❌ Sin fix aún... Satélites: ");
+                Serial.println(sats);
+            } else {
+                Serial.println("✅ Coordenadas:");
+                Serial.print("  Latitud : ");
+                Serial.println(lat, 6); // Imprimir con 6 decimales
+                Serial.print("  Longitud: ");
+                Serial.println(lon, 6);
+                Serial.print("  Satélites: ");
+                Serial.println(sats);
             }
         }
     }
-    return gpsData;
+    // El 'sleep(1)' de Python se reemplaza por el delay en el loop() de Arduino 
+    // o se maneja en el archivo principal (main.cpp) para no bloquear el sistema.
 }

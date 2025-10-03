@@ -2,7 +2,6 @@
 
 // Archivos de encabezado de tus módulos
 #include "AVDC.h"
-#include "GPS.h" 
 #include "PWM.h"
 #include "ultrasonico.h"
 
@@ -28,6 +27,10 @@ void cleanupBuzzer();
 const int MOTOR_PIN = 14; 
 const int MOTOR_CHANNEL = 0;
 
+// --- DECLARACIONES DE FUNCIONES DE GPSControl.cpp ---
+void inicializarGPS();
+void ejecutarGPS();
+
 // Función setup()
 void setup() {
     Serial.begin(115200);
@@ -45,6 +48,9 @@ void setup() {
 
     // --- Configuración del módulo Buzzer ---
     configurarBuzzer();
+
+    // Inicializa el puerto Serial2 para la comunicación con el GPS
+    inicializarGPS(); 
 
     // --- Configuración del módulo Control Motor ---
     configurarControlMotor();
@@ -73,23 +79,12 @@ void loop() {
     // Comenta o elimina esta sección si no la necesitas.
     testSimpleMotor();
     
-    // --- Ejemplo de uso del módulo GPS ---
-    GpsData_t datosGps = leerDatosGps();
-
-    if (datosGps.fix > 0) {
-        Serial.println("✅ Coordenadas:");
-        Serial.print("   Latitud: ");
-        Serial.println(datosGps.latitud, 6); // Muestra 6 decimales
-        Serial.print("   Longitud: ");
-        Serial.println(datosGps.longitud, 6); // Muestra 6 decimales
-        Serial.print("   Satélites: ");
-        Serial.println(datosGps.satelites);
-    } else {
-        Serial.print("❌ Sin fix aún... Satélites: ");
-        Serial.println(datosGps.satelites);
-    }
+    // La función que lee y procesa los datos NMEA
+    ejecutarGPS();
     
-    delay(1000); // Esperar 1 segundo antes de la siguiente lectura
+    // Pausa mínima para no saturar el CPU (equivalente al sleep(1) del Python)
+    // El GPS envía datos a 1Hz (cada segundo), así que un delay de 500ms es suficiente.
+    delay(500); 
     
     // Aquí puedes llamar a otras funciones de tu proyecto
     // como Camexe(), ejecutarSistema(), etc.
