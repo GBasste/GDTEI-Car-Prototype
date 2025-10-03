@@ -1,13 +1,11 @@
 #include <Arduino.h>
 
-#include "ultrasonico.h"
 // Archivos de encabezado de tus módulos
-#include "adc_rele.h"
-#include "motor_pwm.h"
-#include "buzzer.h"
-#include "control_motor.h"
-#include "motor_l298n.h" // <--- Incluye el nuevo archivo
-#include "gps.h" // <--- Incluye el nuevo archivo
+#include "avdc.h"
+#include "alarma.h"
+#include "GPS.h" // <--- Incluye el nuevo archivo
+#include "PWM.h"
+#include "ultrasonico.h"
 
 // Declaración de funciones existentes
 void configurarSistema();
