@@ -1,42 +1,37 @@
 #include <Arduino.h>
-#include <cmath> // Necesario para math.sqrt y math.sin
+#include <cmath> // Necesario para sqrt y sin
 
 // ------------------------------------------------------------------
-// Configuraciones y Constantes PWM
+// Configuraciones Globales (para simplificar el paso de objetos)
 // ------------------------------------------------------------------
 
-// La frecuencia típica para motores es 1kHz (1000 Hz)
-#define PWM_FREQUENCY 1000 
-// Resolución de 10 bits (0-1023), coincidiendo con el código Python
-#define PWM_RESOLUTION 10  
-// Canal de LEDC a usar (se puede elegir cualquiera, el 0 es común)
-#define PWM_CHANNEL 0      
+// Canal de LEDC a usar para el PWM. Se usa una variable global para el módulo.
+// Si controlas varios motores, necesitarías usar varios canales (0, 1, 2, etc.).
+const int PWM_CHANNEL = 0; 
+const int PWM_FREQUENCY = 1000; // Frecuencia 1kHz
+const int PWM_RESOLUTION = 10;  // Resolución 10 bits (0-1023)
 
-// Definición de una estructura para retornar los datos del PWM configurado
-// Esto es el equivalente a retornar el objeto 'pwm' de Python.
-struct PwmState_t {
-    int pin;
-    int channel;
-    int current_duty;
-};
+// Variable global para almacenar el último valor de duty cycle aplicado 
+// por acelerarPwm, necesario para desacelerarPwm.
+int last_duty_cycle = 0; 
 
 // ------------------------------------------------------------------
 // Declaraciones de funciones
 // ------------------------------------------------------------------
 
-PwmState_t acelerarPwm(int pin_numero, int velocidad_inicial, int velocidad_final, float tiempo_total, const char* tipo);
-int desacelerarPwm(PwmState_t pwm_state, int velocidad_final, float tiempo_total);
+void acelerarPwm(int pin_numero, int velocidad_inicial, int velocidad_final, float tiempo_total, const char* tipo);
+void desacelerarPwm(int pin_numero, int velocidad_final, float tiempo_total);
+
 // ------------------------------------------------------------------
 // Implementación de funciones
 // ------------------------------------------------------------------
 
 /**
- * Acelera PWM gradualmente desde velocidad inicial hasta final.
- * * Retorna: Una estructura PwmState_t con el estado final.
+ * @brief Acelera PWM gradualmente desde velocidad inicial hasta final.
  */
-PwmState_t acelerarPwm(int pin_numero, int velocidad_inicial, int velocidad_final, float tiempo_total, const char* tipo) {
+void acelerarPwm(int pin_numero, int velocidad_inicial, int velocidad_final, float tiempo_total, const char* tipo) {
     
-    // 1. Configurar el canal LEDC (LEDC es el nombre del PWM en ESP32)
+    // 1. Configurar el canal LEDC y asignar el pin
     ledcSetup(PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
     ledcAttachPin(pin_numero, PWM_CHANNEL);
     
@@ -59,27 +54,28 @@ PwmState_t acelerarPwm(int pin_numero, int velocidad_inicial, int velocidad_fina
         float valor = 0.0;
         float progreso = (float)paso / pasos;
         
+        // Determinar el valor según el tipo de curva
         if (strcmp(tipo, "lineal") == 0) {
-            // Aceleración lineal constante
             valor = (float)velocidad_inicial + (incremento * paso);
         } 
         else if (strcmp(tipo, "suave") == 0) {
-            // Aceleración suave (curva seno: 0 a PI/2)
+            // Curva seno: 0 a PI/2
             float factor_suave = sin(progreso * PI / 2.0);
             valor = (float)velocidad_inicial + (diferencia * factor_suave);
         } 
         else if (strcmp(tipo, "rapido") == 0) {
-            // Aceleración rápida al inicio, lenta al final (curva raíz cuadrada)
+            // Curva raíz cuadrada
             float factor_rapido = sqrt(progreso);
             valor = (float)velocidad_inicial + (diferencia * factor_rapido);
         } else {
-            // Por defecto, usar lineal si el tipo es inválido
+            // Por defecto, lineal
             valor = (float)velocidad_inicial + (incremento * paso);
         }
         
-        // Aplicar valor PWM, asegurando que esté dentro del rango
+        // Aplicar valor PWM y guardarlo en la global
         int duty = constrain((int)round(valor), 0, 1023);
         ledcWrite(PWM_CHANNEL, duty);
+        last_duty_cycle = duty; // Almacena el valor actual
         
         // Mostrar progreso
         if (paso % 10 == 0) {
@@ -91,22 +87,20 @@ PwmState_t acelerarPwm(int pin_numero, int velocidad_inicial, int velocidad_fina
     }
     
     Serial.printf("✅ Aceleración completada - PWM: %d\n", velocidad_final);
-
-    // Retornar el estado final para usar en la desaceleración
-    PwmState_t state = {pin_numero, PWM_CHANNEL, velocidad_final};
-    return state;
+    last_duty_cycle = velocidad_final; // Asegura que el duty final sea correcto
 }
 
 // ------------------------------------------------------------------
 
 /**
- * Desacelera PWM gradualmente hasta velocidad final.
- * * Retorna: Valor final aplicado.
+ * @brief Desacelera PWM gradualmente hasta velocidad final.
+ * * *NOTA: Esta función usa la variable global 'last_duty_cycle' para saber desde dónde
+ * desacelerar. Asume que el pin ya está asignado al PWM_CHANNEL.*
  */
-int desacelerarPwm(PwmState_t pwm_state, int velocidad_final, float tiempo_total) {
+void desacelerarPwm(int pin_numero, int velocidad_final, float tiempo_total) {
     
-    // El 'pwm_obj' de Python ahora se pasa como 'pwm_state' en C++
-    int velocidad_actual = pwm_state.current_duty;
+    // Usamos el último valor aplicado por acelerarPwm
+    int velocidad_actual = last_duty_cycle;
     
     float diferencia = (float)velocidad_actual - (float)velocidad_final;
     int pasos = 30;
@@ -123,7 +117,8 @@ int desacelerarPwm(PwmState_t pwm_state, int velocidad_final, float tiempo_total
         
         // Aplicar valor PWM
         int duty = constrain((int)round(valor), 0, 1023);
-        ledcWrite(pwm_state.channel, duty);
+        ledcWrite(PWM_CHANNEL, duty);
+        last_duty_cycle = duty; // Actualiza el duty cycle
         
         if (paso % 10 == 0) {
             int porcentaje = (int)(progreso * 100);
@@ -133,12 +128,12 @@ int desacelerarPwm(PwmState_t pwm_state, int velocidad_final, float tiempo_total
         delay(delay_ms);
     }
     
-    // Asegurar que el valor final es el correcto
-    ledcWrite(pwm_state.channel, velocidad_final);
-
-    // Desvincular el pin para liberar el canal LEDC (opcional, pero buena práctica)
-    // ledcDetachPin(pwm_state.pin);
+    // Asegurar que el valor final es el correcto y apagar el PWM
+    ledcWrite(PWM_CHANNEL, velocidad_final);
+    last_duty_cycle = velocidad_final;
 
     Serial.printf("✅ Desaceleración completada - PWM: %d\n", velocidad_final);
-    return velocidad_final;
+    
+    // Opcional: Desvincular el pin si ya no se usará el PWM
+    // ledcDetachPin(pin_numero);
 }

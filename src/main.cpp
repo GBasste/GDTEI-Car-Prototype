@@ -1,6 +1,5 @@
 #include <Arduino.h>
 
-
 // Declaración de funciones de Nuevo_Interruptor.cpp ---
 void configurarSistema();
 void ejecutarSistema();
@@ -19,13 +18,6 @@ void beepSimple(float duration);
 // ... (pegar el resto de las declaraciones aquí)
 void cleanupBuzzer();
 
-// Declaración de la estructura para manejar el estado del PWM
-struct PwmState_t {
-    int pin;
-    int channel;
-    int current_duty;
-}
-
 // --- DECLARACIONES DE FUNCIONES DE GPSControl.cpp ---
 void inicializarGPS();
 void ejecutarGPS();
@@ -35,17 +27,20 @@ void configurarComponentes();
 void medirVoltajeYControlarRele();
 // -------------------------------------------------------
 
-
 // --- ULTRASONICO ---
 void configurarUltrasonico();
 void ejecutarUltrasonico();
 
+// ---ALARMA ---
+void alarm();
+
+// --- DECLARACIONES DE FUNCIONES DE PwmControl.cpp ---
+void acelerarPwm(int pin_numero, int velocidad_inicial, int velocidad_final, float tiempo_total, const char* tipo);
+void desacelerarPwm(int pin_numero, int velocidad_final, float tiempo_total);
+
 // Función setup()
 void setup() {
     Serial.begin(115200);
-
-    // --- Configuración del módulo PWM del motor ---
-    configurarPwm(MOTOR_PIN, MOTOR_CHANNEL);
 
     // --- Configuración del módulo Buzzer ---
     configurarBuzzer();
@@ -56,6 +51,8 @@ void setup() {
     // Inicializar el ADC y el pin del relé
     configurarComponentes(); 
 
+
+    //Control_Motores
    // Inicializa todos los pines
     configurarPines(); 
     
@@ -89,39 +86,27 @@ void loop() {
     
     // Pausa mínima para no saturar el CPU (equivalente al sleep(1) del Python)
     // El GPS envía datos a 1Hz (cada segundo), así que un delay de 500ms es suficiente.
-    delay(500); 
-
-    // --------------------------------------------------------
-    // EJEMPLO DE USO: Acelerar linealmente
-    // --------------------------------------------------------
-    Serial.println("\n--- INICIO CICLO ---");
+    delay(500);     
     
-    // Acelera de 0 a 800 en 3.0 segundos de forma "suave"
-    PwmState_t motor_state = acelerarPwm(
+    //--- PWM ---
+    // 1. Llamada a la función de Aceleración
+    acelerarPwm(
         25,          // Pin GPIO del motor
         0,           // Velocidad inicial
-        800,         // Velocidad final
-        3.0,         // Tiempo total (segundos)
+        900,         // Velocidad final
+        4.0,         // Tiempo total (segundos)
         "suave"      // Tipo de curva
     );
     
-    delay(4000); // Mantener la velocidad por 4 segundos
-    
-    // Desacelera el motor de 800 a 0 en 1.5 segundos
+    delay(5000); // Mantener la velocidad por 5 segundos
+
+    // 2. Llamada a la función de Desaceleración
+    // El pin_numero debe ser el mismo usado en acelerarPwm
     desacelerarPwm(
-        motor_state, // Estado actual retornado por acelerarPwm
-        0,           // Velocidad final
+        25,          // Pin GPIO del motor
+        0,           // Velocidad final (detener)
         1.5          // Tiempo total (segundos)
     );
     
-    delay(5000); // Esperar 5 segundos antes de repetir
-    
-    // Aquí puedes llamar a otras funciones de tu proyecto
-    // como Camexe(), ejecutarSistema(), etc.
-    // Por ejemplo:
-    // Camexe();
-    // ejecutarSistema();
-
-    
-    
+    delay(10000); // Esperar 10 segundos antes de repetir
 }
