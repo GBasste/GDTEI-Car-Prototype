@@ -2,7 +2,6 @@
 
 // Archivos de encabezado de tus módulos
 #include "AVDC.h"
-#include "PWM.h"
 #include "ultrasonico.h"
 
 // Declaración de funciones existentes
@@ -23,9 +22,15 @@ void beepSimple(float duration);
 // ... (pegar el resto de las declaraciones aquí)
 void cleanupBuzzer();
 
-// Definiciones de pines y canales PWM para el motor
-const int MOTOR_PIN = 14; 
-const int MOTOR_CHANNEL = 0;
+// Declaración de la estructura para manejar el estado del PWM
+struct PwmState_t {
+    int pin;
+    int channel;
+    int current_duty;
+}
+// Declaraciones de funciones (prototipos) de MotorControl.cpp
+PwmState_t acelerarPwm(int pin_numero, int velocidad_inicial, int velocidad_final, float tiempo_total, const char* tipo);
+int desacelerarPwm(PwmState_t pwm_state, int velocidad_final, float tiempo_total);
 
 // --- DECLARACIONES DE FUNCIONES DE GPSControl.cpp ---
 void inicializarGPS();
@@ -40,9 +45,6 @@ void setup() {
     CamConfig();
     motorset();
 
-    // --- Configuración del módulo ADC/Relé ---
-    configurarAdcRele();
-    
     // --- Configuración del módulo PWM del motor ---
     configurarPwm(MOTOR_PIN, MOTOR_CHANNEL);
 
@@ -85,6 +87,31 @@ void loop() {
     // Pausa mínima para no saturar el CPU (equivalente al sleep(1) del Python)
     // El GPS envía datos a 1Hz (cada segundo), así que un delay de 500ms es suficiente.
     delay(500); 
+
+    // --------------------------------------------------------
+    // EJEMPLO DE USO: Acelerar linealmente
+    // --------------------------------------------------------
+    Serial.println("\n--- INICIO CICLO ---");
+    
+    // Acelera de 0 a 800 en 3.0 segundos de forma "suave"
+    PwmState_t motor_state = acelerarPwm(
+        25,          // Pin GPIO del motor
+        0,           // Velocidad inicial
+        800,         // Velocidad final
+        3.0,         // Tiempo total (segundos)
+        "suave"      // Tipo de curva
+    );
+    
+    delay(4000); // Mantener la velocidad por 4 segundos
+    
+    // Desacelera el motor de 800 a 0 en 1.5 segundos
+    desacelerarPwm(
+        motor_state, // Estado actual retornado por acelerarPwm
+        0,           // Velocidad final
+        1.5          // Tiempo total (segundos)
+    );
+    
+    delay(5000); // Esperar 5 segundos antes de repetir
     
     // Aquí puedes llamar a otras funciones de tu proyecto
     // como Camexe(), ejecutarSistema(), etc.
