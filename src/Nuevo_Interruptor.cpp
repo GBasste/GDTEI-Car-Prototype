@@ -16,12 +16,12 @@ void configurarSistema() {
 void ejecutarSistema() {
   // Detectar botón presionado OFF
   static bool botonPresionadoAntes = false;
-  bool botonPresionado = (digitalRead(19) == LOW);
+  bool botonPresionado = (digitalRead(0) == LOW);
 
   // Solo mostrar mensaje cuando se presiona (no mientras se mantiene)
   if (botonPresionado && !botonPresionadoAntes) {
     Serial.println("Boton presionado - Apagando rele");
-    digitalWrite(16, HIGH);
+    digitalWrite(35, HIGH);
   }
   botonPresionadoAntes = botonPresionado;
 
@@ -32,7 +32,7 @@ void ejecutarSistema() {
   // Solo mostrar mensaje cuando se presiona (no mientras se mantiene)
   if (botonPresionadoOn && !botonPresionadoAntesOn) {
     Serial.println("Boton presionado - Encendiendo rele");
-    digitalWrite(16, LOW);
+    digitalWrite(35, LOW);
   }
   botonPresionadoAntesOn = botonPresionadoOn;
   
@@ -47,10 +47,10 @@ void ejecutarSistema() {
     Serial.println(activar);
     
     if(activar == 1) {
-      digitalWrite(16, LOW);
+      digitalWrite(35, LOW);
       Serial.println("Rele ACTIVADO");
     } else if(activar == 0) {
-      digitalWrite(16, HIGH);
+      digitalWrite(35, HIGH);
       Serial.println("Rele DESACTIVADO");
     } else {
       Serial.println("Comando no valido. Use 1 o 0");
