@@ -50,7 +50,7 @@ void sendData(float front, float back) {
   webSocket.sendTXT(payload);
 }
 
-void setup() {
+void configurarUltrasonico() {
   Serial.begin(115200);
   delay(500);
   
@@ -76,7 +76,7 @@ void setup() {
   Serial.println("Iniciado\n");
 }
 
-void loop() {
+void ejecutarUltrasonico() {
   webSocket.loop();
   
   float front = measureDistance(TRIG_FRONT, ECHO_FRONT);
