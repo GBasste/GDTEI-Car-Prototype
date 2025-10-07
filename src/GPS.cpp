@@ -1,136 +1,159 @@
-#include <Arduino.h>
+#include <WiFi.h>
+#include <WebSocketsClient.h>
+#include <ArduinoJson.h> // Se mantiene para compatibilidad, pero no se usa activamente para JSON
+#include <HardwareSerial.h>
 
-// Definiciones de pines UART para el GPS
-// En ESP32, usamos Serial2 para un puerto UART adicional.
-const int GPS_RX_PIN = 16;
-const int GPS_TX_PIN = 17;
-const long GPS_BAUDRATE = 9600;
+// --- Configuración de WiFi ---
+const char* ssid = "Airtel-E5573-7A7B"; // Red WiFi
+const char* password = "9f12i2f2";      // Contraseña WiFi
 
-// Declaraciones de funciones
-float convertirADecimal(String coord, char direccion);
-String leerLineaGPS();
-bool extraerCoordenadasGPGGA(String linea, float &latitud, float &longitud, int &fixStatus, int &satelites);
-void inicializarGPS();
-void ejecutarGPS();
+// --- Configuración de WebSocket para Node-RED ---
+const char* nodeRed_host = "165.22.38.176";
+const uint16_t nodeRed_port = 1880;
+const char* nodeRed_path = "/ws-gps";   // Ruta del nodo WebSocket In en Node-RED
 
-// ------------------------------------------------------------------
-// Implementación de funciones
-// ------------------------------------------------------------------
+// --- Configuración de GPS ---
+static const int RXPin = 16, TXPin = 17; // GPIOs para el Serial2 (RX2, TX2)
+static const uint32_t GPSBaud = 9600;
 
-// Inicializa el puerto Serial2 para el módulo GPS
+WebSocketsClient webSocketGPS; 
+
+// Definición del puerto serie para el GPS (Serial2 del ESP32)
+HardwareSerial GPS_Serial(2); 
+
+// Buffer para construir la sentencia NMEA
+String NMEA_Sentence = "";
+bool sentence_ready = false;
+
+// ------------------------------------------
+// FUNCIÓN PARA EXTRAER Y MOSTRAR SATÉLITES (Corregida)
+// ------------------------------------------
+void extractAndPrintSatellites(String nmea) {
+  
+  // --- BUSCAR SENTENCIA $GPGSV (Satélites en Vista) ---
+  if (nmea.startsWith("$GPGSV")) {
+    // La sentencia $GPGSV tiene esta estructura:
+    // $GPGSV, [1]Num Sentencias, [2]Num Sentencia, [3]TOTAL Satélites en Vista, ...
+    
+    // Necesitamos el campo [3]. Contamos las comas:
+    int firstComma = nmea.indexOf(',');
+    int secondComma = nmea.indexOf(',', firstComma + 1);
+    int thirdComma = nmea.indexOf(',', secondComma + 1);
+    int fourthComma = nmea.indexOf(',', thirdComma + 1); 
+    
+    // El número de satélites está entre la tercera y la cuarta coma.
+    if (thirdComma > 0 && fourthComma > thirdComma) {
+      String totalSatellitesStr = nmea.substring(thirdComma + 1, fourthComma);
+      
+      // Mostrar el número de satélites
+      Serial.print("Satélites (GSV - En Vista): ");
+      Serial.println(totalSatellitesStr);
+      return;
+    }
+  }
+}
+
+// ------------------------------------------
+// FUNCIÓN DE CONEXIÓN WIFI
+// ------------------------------------------
+void connectWiFi() {
+  Serial.println();
+  Serial.print("Conectando a WiFi ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.print("WiFi conectado. IP: ");
+  Serial.println(WiFi.localIP());
+}
+
+// ------------------------------------------
+// FUNCIÓN CALLBACK DE WEBSOCKET
+// ------------------------------------------
+void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
+  switch (type) {
+    case WStype_DISCONNECTED:
+      Serial.println("[WS] Desconectado!");
+      break;
+    case WStype_CONNECTED:
+      Serial.printf("[WS] Conectado a Node-RED en: %s:%d%s\n", nodeRed_host, nodeRed_port, nodeRed_path);
+      break;
+    default:
+      break;
+  }
+}
+
+// ------------------------------------------
+// SETUP
+// ------------------------------------------
 void inicializarGPS() {
-    Serial2.begin(GPS_BAUDRATE, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
-    Serial.println("🛰️ Esperando datos GPS...");
+  Serial.begin(115200);
+  // NOTA: Recuerda que la tasa de fábrica del GPS es 9600
+  GPS_Serial.begin(GPSBaud, SERIAL_8N1, RXPin, TXPin); // Inicializa Serial2 para el GPS
+
+  // Conectar a WiFi
+  connectWiFi();
+
+  // Conectar a WebSocket
+  webSocketGPS.begin(nodeRed_host, nodeRed_port, nodeRed_path);
+  webSocketGPS.onEvent(webSocketEvent);
+  webSocketGPS.setReconnectInterval(5000); 
+  Serial.println("[WS] Intentando conectar a Node-RED...");
 }
 
-// Función auxiliar para convertir DDMM.MMMM (Grados Minutos) a grados decimales
-float convertirADecimal(String coord, char direccion) {
-    if (coord.length() < 5) return 0.0;
-    
-    // Encuentra la posición del punto decimal
-    int pointIndex = coord.indexOf('.');
-    if (pointIndex == -1) return 0.0;
-    
-    // Extraer los grados (DD o DDD)
-    String degreesStr = coord.substring(0, pointIndex - 2);
-    float degrees = degreesStr.toFloat();
-    
-    // Extraer los minutos (MM.MMMM)
-    String minutesStr = coord.substring(pointIndex - 2);
-    float minutes = minutesStr.toFloat();
-    
-    float decimal = degrees + minutes / 60.0;
-    
-    // Aplicar dirección (N/S, E/W)
-    if (direccion == 'S' || direccion == 'W') {
-        decimal = -decimal;
-    }
-    return decimal;
-}
-
-// Lee una línea completa del buffer serial (equivalente a uart.readline())
-String leerLineaGPS() {
-    if (Serial2.available()) {
-        String linea = Serial2.readStringUntil('\n');
-        linea.trim(); // Quita espacios y retornos de carro
-        // El ESP32 maneja la codificación UTF-8 por defecto, así que no es necesario decode()
-        return linea;
-    }
-    return ""; // Retorna String vacío si no hay datos
-}
-
-// Procesa una línea GPGGA para extraer coordenadas (equivalente a extraer_coordenadas_GPGGA)
-// Nota: Usa referencias (&) para actualizar los valores de latitud, longitud, etc.
-bool extraerCoordenadasGPGGA(String linea, float &latitud, float &longitud, int &fixStatus, int &satelites) {
-    if (!linea.startsWith("$GPGGA")) {
-        return false;
-    }
-    
-    // El método split() no es estándar en Arduino String, usamos indexOf y substring.
-    int startIndex = 0;
-    int commaIndex = -1;
-    
-    // Partes: $GPGGA, [1] Hora, [2] Lat, [3] N/S, [4] Lon, [5] E/W, [6] Fix, [7] Satelites
-    String partes[15]; // Solo necesitamos hasta el índice 7
-    int partCount = 0;
-
-    for (int i = 0; i < 15; i++) {
-        commaIndex = linea.indexOf(',', startIndex);
-        if (commaIndex == -1) {
-            partes[i] = linea.substring(startIndex);
-            partCount = i + 1;
-            break;
-        }
-        partes[i] = linea.substring(startIndex, commaIndex);
-        startIndex = commaIndex + 1;
-        partCount = i + 1;
-    }
-    
-    // Verificar que tenemos suficientes partes y que los campos 2, 4, 6 y 7 no están vacíos
-    if (partCount < 8 || partes[2].isEmpty() || partes[4].isEmpty() || partes[6].isEmpty() || partes[7].isEmpty()) {
-        return false;
-    }
-
-    // [2] Latitud, [3] Dirección Lat
-    latitud = convertirADecimal(partes[2], partes[3].charAt(0));
-    
-    // [4] Longitud, [5] Dirección Lon
-    longitud = convertirADecimal(partes[4], partes[5].charAt(0));
-    
-    // [6] Estado de Fix (0=No fix, 1=GPS fix, etc.)
-    fixStatus = partes[6].toInt();
-    
-    // [7] Número de satélites
-    satelites = partes[7].toInt();
-    
-    return true;
-}
-
-
-// Bucle de ejecución principal para el GPS (para llamar desde loop())
+// ------------------------------------------
+// LOOP
+// ------------------------------------------
 void ejecutarGPS() {
-    String linea = leerLineaGPS();
+  webSocketGPS.loop(); 
+  
+  // 1. LECTURA Y CONSTRUCCIÓN DE LA SENTENCIA NMEA CRUDA
+  while (GPS_Serial.available() > 0) {
+    char inChar = GPS_Serial.read();
     
-    if (!linea.isEmpty()) {
-        float lat, lon;
-        int fix, sats;
-        
-        if (extraerCoordenadasGPGGA(linea, lat, lon, fix, sats)) {
-            
-            if (fix == 0) {
-                Serial.print("❌ Sin fix aún... Satélites: ");
-                Serial.println(sats);
-            } else {
-                Serial.println("✅ Coordenadas:");
-                Serial.print("  Latitud : ");
-                Serial.println(lat, 6); // Imprimir con 6 decimales
-                Serial.print("  Longitud: ");
-                Serial.println(lon, 6);
-                Serial.print("  Satélites: ");
-                Serial.println(sats);
-            }
-        }
+    if (inChar == '\n') { 
+      // Si encontramos el final de la línea, la sentencia está lista
+      sentence_ready = true;
+      break; 
     }
-    // El 'sleep(1)' de Python se reemplaza por el delay en el loop() de Arduino 
-    // o se maneja en el archivo principal (main.cpp) para no bloquear el sistema.
+    // Evitar añadir el retorno de carro (\r) si existe
+    if (inChar != '\r') {
+      NMEA_Sentence += inChar;
+    }
+  }
+
+  // 2. ENVIAR LA SENTENCIA NMEA COMPLETA
+  if (sentence_ready) {
+      
+    // --- A. MOSTRAR EN MONITOR SERIAL (La sentencia NMEA cruda) ---
+    Serial.println("------------------------------------");
+    Serial.print("NMEA Recibida: ");
+    Serial.println(NMEA_Sentence);
+    
+    // 🟢 NUEVA FUNCIÓN: Llamamos a la función para extraer y mostrar los satélites
+    extractAndPrintSatellites(NMEA_Sentence);
+    
+    Serial.println("------------------------------------");
+
+    // --- B. ENVIAR DATOS A NODE-RED POR WEBSOCKET ---
+    if (webSocketGPS.isConnected()) {
+        
+        // Enviamos la cadena NMEA directamente.
+        webSocketGPS.sendTXT(NMEA_Sentence); 
+        Serial.print("[WS] Sentencia NMEA enviada: ");
+        Serial.println(NMEA_Sentence);
+    }
+
+    // Resetear para la siguiente lectura
+    NMEA_Sentence = "";           
+    sentence_ready = false;
+  }
+
+  // Pequeña pausa
+  delay(10); 
 }
