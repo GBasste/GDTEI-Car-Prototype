@@ -8,9 +8,9 @@ extern const char* ssid; // Red WiFi
 extern const char* password;      // Contraseña WiFi
 
 // --- Configuración de WebSocket para Node-RED ---
-const char* nodeRed_host = "165.22.38.176";
-const uint16_t nodeRed_port = 1880;
-const char* nodeRed_path = "/ws-gps";   // Ruta del nodo WebSocket In en Node-RED
+extern const char* nodeRed_host;
+extern const uint16_t nodeRed_port;
+extern const char* nodeRed_path;   // Ruta del nodo WebSocket In en Node-RED
 
 // Agrega esta *DECLARACIÓN* después de los #include
 // Le dice al compilador: "La definición existe en otro archivo"
