@@ -1,8 +1,33 @@
 #include <Arduino.h>
+#include <WebSocketsClient.h>
+#include <ArduinoJson.h> 
+#include <HardwareSerial.h>
+
 
 // --- Configuración de WiFi ---
 const char* ssid = "Airtel-E5573-7A7B"; // Red WiFi
 const char* password = "9f12i2f2";      // Contraseña WiFi
+
+// --- Configuración de WebSocket para Node-RED ---
+const char* nodeRed_host = "165.22.38.176";
+const uint16_t nodeRed_port = 1880;
+const char* nodeRed_path = "/ws-gps";   // Ruta del nodo WebSocket In en Node-RED
+
+// ------------------------------------------
+// FUNCIÓN CALLBACK DE WEBSOCKET
+// ------------------------------------------
+void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
+  switch (type) {
+    case WStype_DISCONNECTED:
+      Serial.println("[WS] Desconectado!");
+      break;
+    case WStype_CONNECTED:
+      Serial.printf("[WS] Conectado a Node-RED en: %s:%d%s\n", nodeRed_host, nodeRed_port, nodeRed_path);
+      break;
+    default:
+      break;
+  }
+}
 
 
 // Declaración de funciones de Nuevo_Interruptor.cpp ---

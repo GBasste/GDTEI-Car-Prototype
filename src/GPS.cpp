@@ -12,6 +12,10 @@ const char* nodeRed_host = "165.22.38.176";
 const uint16_t nodeRed_port = 1880;
 const char* nodeRed_path = "/ws-gps";   // Ruta del nodo WebSocket In en Node-RED
 
+// Agrega esta *DECLARACIÓN* después de los #include
+// Le dice al compilador: "La definición existe en otro archivo"
+void webSocketEvent(WStype_t type, uint8_t * payload, size_t length);
+
 // --- Configuración de GPS ---
 static const int RXPin = 16, TXPin = 17; // GPIOs para el Serial2 (RX2, TX2)
 static const uint32_t GPSBaud = 9600;
@@ -70,22 +74,6 @@ void connectWiFi() {
   Serial.println("");
   Serial.print("WiFi conectado. IP: ");
   Serial.println(WiFi.localIP());
-}
-
-// ------------------------------------------
-// FUNCIÓN CALLBACK DE WEBSOCKET
-// ------------------------------------------
-void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
-  switch (type) {
-    case WStype_DISCONNECTED:
-      Serial.println("[WS] Desconectado!");
-      break;
-    case WStype_CONNECTED:
-      Serial.printf("[WS] Conectado a Node-RED en: %s:%d%s\n", nodeRed_host, nodeRed_port, nodeRed_path);
-      break;
-    default:
-      break;
-  }
 }
 
 // ------------------------------------------

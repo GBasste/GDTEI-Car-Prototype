@@ -6,6 +6,10 @@
 extern const char* ssid; // Red WiFi
 extern const char* password;      // Contraseña WiFi
 
+// Agrega esta *DECLARACIÓN* después de los #include
+// Le dice al compilador: "La definición existe en otro archivo"
+void webSocketEvent(WStype_t type, uint8_t * payload, size_t length);
+
 WebSocketsClient webSocket;
 
 #define TRIG_FRONT 12
@@ -13,13 +17,6 @@ WebSocketsClient webSocket;
 #define TRIG_BACK 5
 #define ECHO_BACK 18
 
-void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
-  if(type == WStype_CONNECTED) {
-    Serial.println("WebSocket Conectado");
-  } else if(type == WStype_DISCONNECTED) {
-    Serial.println("WebSocket Desconectado");
-  }
-}
 
 float measureDistance(int trigPin, int echoPin) {
   digitalWrite(trigPin, LOW);
