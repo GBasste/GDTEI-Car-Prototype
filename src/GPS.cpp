@@ -4,8 +4,8 @@
 #include <HardwareSerial.h>
 
 // --- Configuración de WiFi ---
-const char* ssid = "Airtel-E5573-7A7B"; // Red WiFi
-const char* password = "9f12i2f2";      // Contraseña WiFi
+extern const char* ssid; // Red WiFi
+extern const char* password;      // Contraseña WiFi
 
 // --- Configuración de WebSocket para Node-RED ---
 const char* nodeRed_host = "165.22.38.176";

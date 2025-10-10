@@ -1,5 +1,10 @@
 #include <Arduino.h>
 
+// --- Configuración de WiFi ---
+const char* ssid = "Airtel-E5573-7A7B"; // Red WiFi
+const char* password = "9f12i2f2";      // Contraseña WiFi
+
+
 // Declaración de funciones de Nuevo_Interruptor.cpp ---
 void configurarSistema();
 void ejecutarSistema();

@@ -2,8 +2,9 @@
 #include <WebSocketsClient.h>
 #include <ArduinoJson.h>
 
-const char* ssid = "Airtel-E5573-7A7B";
-const char* password = "9f12i2f2";
+// --- Configuración de WiFi ---
+extern const char* ssid; // Red WiFi
+extern const char* password;      // Contraseña WiFi
 
 WebSocketsClient webSocket;
 
