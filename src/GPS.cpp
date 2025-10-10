@@ -9,7 +9,7 @@ extern const char* password;      // Contraseña WiFi
 
 // --- Configuración de WebSocket para Node-RED ---
 extern const char* nodeRed_host;
-extern const uint16_t nodeRed_port;
+extern uint16_t nodeRed_port;
 extern const char* nodeRed_path;   // Ruta del nodo WebSocket In en Node-RED
 
 // Agrega esta *DECLARACIÓN* después de los #include

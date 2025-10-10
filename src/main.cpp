@@ -10,7 +10,7 @@ const char* password = "9f12i2f2";      // Contraseña WiFi
 
 // --- Configuración de WebSocket para Node-RED ---
 const char* nodeRed_host = "165.22.38.176";
-const uint16_t nodeRed_port = 1880;
+uint16_t nodeRed_port = 1880;
 const char* nodeRed_path = "/ws-gps";   // Ruta del nodo WebSocket In en Node-RED
 
 // ------------------------------------------
