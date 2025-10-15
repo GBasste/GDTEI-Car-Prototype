@@ -15,6 +15,7 @@ void CCPINCONFIG(){
 }
 
 void CCEXE(){
+    digitalRead(input);
     if(input == 1 && change == 0){
         digitalWrite(output1, HIGH);
         digitalWrite(output2, LOW); 
