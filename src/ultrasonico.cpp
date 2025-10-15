@@ -10,7 +10,7 @@ extern const char* password;      // Contraseña WiFi
 // Le dice al compilador: "La definición existe en otro archivo"
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length);
 
-WebSocketsClient webSocket;
+extern WebSocketsClient webSocketUltra;
 
 #define TRIG_FRONT 12
 #define ECHO_FRONT 14
@@ -45,12 +45,12 @@ void sendData(float front, float back) {
   
   String payload;
   serializeJson(doc, payload);
-  webSocket.sendTXT(payload);
+  webSocketUltra.sendTXT(payload);
 }
 
 void configurarUltrasonico() {
-  Serial.begin(115200);
-  delay(500);
+  //Serial.begin(115200);
+  //delay(500);
   
   pinMode(TRIG_FRONT, OUTPUT);
   pinMode(ECHO_FRONT, INPUT);
@@ -60,32 +60,39 @@ void configurarUltrasonico() {
   digitalWrite(TRIG_FRONT, LOW);
   digitalWrite(TRIG_BACK, LOW);
   
-  WiFi.begin(ssid, password);
+  /*WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
   Serial.printf("\nWiFi: %s\n", WiFi.localIP().toString().c_str());
   
-  webSocket.begin("165.22.38.176", 1880, "/ws-ultra-1");
-  webSocket.onEvent(webSocketEvent);
-  webSocket.setReconnectInterval(5000);
+  webSocketUltra.begin("165.22.38.176", 1880, "/ws-ultra-1");
+  webSocketUltra.onEvent(webSocketEvent);
+  webSocketUltra.setReconnectInterval(5000);
   
-  Serial.println("Iniciado\n");
+  Serial.println("Iniciado\n");*/
+  Serial.println("[Ultra] Pines configurados.");
 }
 
+/*void loopWebSocketUltra() {
+  webSocketUltra.loop();
+}*/
+
 void ejecutarUltrasonico() {
-  webSocket.loop();
   
   float front = measureDistance(TRIG_FRONT, ECHO_FRONT);
-  delay(60);
   float back = measureDistance(TRIG_BACK, ECHO_BACK);
   
   Serial.printf("F: %.1f cm | T: %.1f cm\n", front, back);
   
-  if (front > 0 && back > 0 && webSocket.isConnected()) {
-    sendData(front, back);
+  // CAMBIO CRÍTICO: Envía SIEMPRE que haya conexión, sin importar si los 
+  // valores son negativos o cero. Node-RED puede manejar el -1.0.
+  if (webSocketUltra.isConnected()) {
+      sendData(front, back); 
   }
-  
-  delay(200);
+
+  /*if (front > 0 && back > 0 && webSocketUltra.isConnected()) {
+    sendData(front, back);
+  }*/
 }
