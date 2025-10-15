@@ -92,6 +92,10 @@ void ejecutarUltrasonico();
 // ---ALARMA ---
 void alarm();
 
+// ---CIERRE CENTRAL---
+void CCPINCONFIG();
+void CCEXE();
+
 // --- DECLARACIONES DE FUNCIONES DE PwmControl.cpp ---
 void acelerarPwm(int pin_numero, int velocidad_inicial, int velocidad_final, float tiempo_total, const char* tipo);
 void desacelerarPwm(int pin_numero, int velocidad_final, float tiempo_total);
@@ -169,6 +173,9 @@ void setup() {
   abrirPuertas();
   apagarDireccion();
 
+  // ---CIERRE CENTRAL---
+  CCPINCONFIG();
+
   // Conexión WiFi
   Serial.print("Conectando a WiFi...");
   WiFi.begin(ssid, password);
@@ -189,6 +196,9 @@ void loop() {
     /*webSocketUltra.loop(); 
     delay(1); // Da un respiro de 1ms al sistema operativo para manejar la pila de red
     webSocketGPS.loop(); */
+
+    // ---CIERRE CENTRAL---
+    CCEXE();
 
     // 2. Temporizador para Ultrasonicos (Lectura y envío)
     unsigned long currentMillis = millis();
