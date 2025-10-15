@@ -6,10 +6,11 @@
 
 
 // --- Configuración de WiFi ---
-//const char* ssid = "Airtel-E5573-7A7B"; // Red WiFi
-//const char* password = "9f12i2f2";      // Contraseña WiFi
-const char* ssid = "LIB-9227236"; // Red WiFi
-const char* password = "JtxfsD5tc9vw";      // Contraseña WiFi
+const char* ssid = "Airtel-E5573-7A7B"; // Red WiFi
+const char* password = "9f12i2f2";      // Contraseña WiFi
+//const char* ssid = "LIB-9227236"; // Red WiFi
+//const char* password = "JtxfsD5tc9vw";      // Contraseña WiFi
+int espera = 0;
 
 // --- DEFINICIÓN GLOBAL DE LA CONFIGURACIÓN DEL SERVIDOR ---
 const char* nodeRed_host = "165.22.38.176";
@@ -108,13 +109,19 @@ void setup() {
   // Conexión WiFi (MANTENER AQUÍ PARA QUE SEA ÚNICA)
     Serial.print("Conectando a WiFi...");
     WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
+    while (WiFi.status() != WL_CONNECTED && espera <=20 ) {
         delay(500);
         Serial.print(".");
+        espera++;
+        if(espera == 20 && WiFi.status() == WL_CONNECTED){
+          Serial.println("\nWiFi conectado!");
+          Serial.print("Dirección IP: ");
+          Serial.println(WiFi.localIP());
+        }
+        if (espera == 20 && WiFi.status() != WL_CONNECTED){
+          Serial.println("\nNo se pudo establecer conexion WiFi");
+        }
     }
-    Serial.println("\nWiFi conectado!");
-    Serial.print("Dirección IP: ");
-    Serial.println(WiFi.localIP());
     // ---------------------------
 
     // *AJUSTE CRÍTICO: CONEXIÓN DE WEBSOCKETS AQUÍ*
