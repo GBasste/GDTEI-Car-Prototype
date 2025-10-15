@@ -60,14 +60,6 @@ bool decelerated = false; // Bandera para controlar el ciclo de PWM
 void configurarSistema();
 void ejecutarSistema();
 
-// Declaracion de funciones de Control_Motores ---
-void configurarPines();
-void cerrarPuertas();
-void abrirPuertas();
-void apagarMotor();
-void encenderMotor();
-void apagarDireccion();
-
 // --- DECLARACIONES DE FUNCIONES DE BuzzerControl.cpp ---
 void configurarBuzzer();
 void beepSimple(float duration);
@@ -162,16 +154,6 @@ void setup() {
 
   // Inicializar el ADC y el pin del relé
   configurarComponentes(); 
-
-
-  //Control_Motores
-  // Inicializa todos los pines
-  configurarPines(); 
-    
-  // La acción inicial del código Python
-  encenderMotor(); // Asegura que el motor tenga alimentación
-  abrirPuertas();
-  apagarDireccion();
 
   // ---CIERRE CENTRAL---
   CCPINCONFIG();
