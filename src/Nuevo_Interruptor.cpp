@@ -32,7 +32,7 @@ void ejecutarSistema() {
   // Detectar botón presionado ON
   static bool botonPresionadoAntesOn = false;
   bool botonPresionadoOn = (digitalRead(huella) == HIGH);
-
+ 
   // Solo mostrar mensaje cuando se presiona (no mientras se mantiene)
   if (botonPresionadoOn && !botonPresionadoAntesOn) {
     Serial.println("Boton presionado - Encendiendo rele");
