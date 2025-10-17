@@ -3,7 +3,7 @@
 // Definiciones de Pines
 const int boton_off = 2;    // Botón OFF (N/O: HIGH al presionar)
 const int huella_on = 4;    // Pulso ON (HIGH al detectar)
-const int salida_rele = 35; // Salida al Relé (LOW para activar, HIGH para desactivar)
+const int salida_rele = 15; // Salida al Relé (LOW para activar, HIGH para desactivar)
 
 // Definiciones de Estado del Relé
 const int RELE_ACTIVADO = LOW;
@@ -45,13 +45,18 @@ void actualizarEstadoRele(int nuevoEstado, const char* fuente) {
     }
 }
 
+// ----------------------------------------------------------------------
+
 // Función para manejar el flanco de subida (Press Event)
 bool detectarFlanco(int pin, bool& estadoAnterior, bool nivelActivo) {
+    // El nuevo voltaje de entrada (5V al activar) se mantiene en HIGH
     bool estadoActual = (digitalRead(pin) == nivelActivo);
-    bool flancoDetectado = estadoActual && !estadoAnterior;
+     bool flancoDetectado = estadoActual && !estadoAnterior;
     estadoAnterior = estadoActual;
     return flancoDetectado;
 }
+
+// ----------------------------------------------------------------------
 
 void ejecutarSistema() {
     // Variables estáticas para detección de flancos
@@ -59,13 +64,13 @@ void ejecutarSistema() {
     static bool estadoAnteriorHuellaOn = false;
 
     // --- Lógica de Botón OFF (Pin 2) ---
-    // El botón es N/O: Manda HIGH (1.6V) al presionar
+    // El botón es N/O: Manda HIGH (5V) al presionar
     if (detectarFlanco(boton_off, estadoAnteriorBotonOff, HIGH)) {
         actualizarEstadoRele(RELE_DESACTIVADO, "Boton OFF (Pin 2)");
     }
 
     // --- Lógica de Huella ON (Pin 4) ---
-    // La huella manda HIGH (1.6V) al detectar
+    // La huella manda HIGH (5V) al detectar
     if (detectarFlanco(huella_on, estadoAnteriorHuellaOn, HIGH)) {
         actualizarEstadoRele(RELE_ACTIVADO, "Huella ON (Pin 4)");
     }
