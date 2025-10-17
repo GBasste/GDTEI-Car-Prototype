@@ -88,10 +88,6 @@ void alarm();
 void CCPINCONFIG();
 void CCEXE();
 
-// --- DECLARACIONES DE FUNCIONES DE PwmControl.cpp ---
-void acelerarPwm(int pin_numero, int velocidad_inicial, int velocidad_final, float tiempo_total, const char* tipo);
-void desacelerarPwm(int pin_numero, int velocidad_final, float tiempo_total);
-
 // ✅ DECLARACIÓN DE LA FUNCIÓN DE LA TAREA
 void TaskWebSocketManager(void *pvParameters); 
 
@@ -200,22 +196,6 @@ void loop() {
         // Esta función llama a la lectura Serial del GPS y al envío webSocketGPS.sendTXT()
         ejecutarGPS(); 
     }
-    // 5. Lógica de Control de Movimiento (Reemplazo del delay de 10 segundos)
-    if (!decelerated) {
-        // Acelerar y mantener
-        acelerarPwm(25, 0, 900, 4.0, "suave");
-        // Establecer el tiempo en que debe comenzar la desaceleración
-        previousMillis_pwm = currentMillis;
-        decelerated = true; // El siguiente paso es esperar para desacelerar
-    }
-
-    // Esperar 5 segundos + 10 segundos = 15 segundos antes de repetir el ciclo
-    if (decelerated && (currentMillis - previousMillis_pwm >= 15000)) { // 15 segundos
-        // Desacelerar
-        desacelerarPwm(25, 0, 1.5);
-        decelerated = false; // Repetir el ciclo de aceleración/desaceleración
-    }
-
     // 6. alarm()
     alarm();
 
