@@ -1,38 +1,49 @@
-#include <Arduino.h>
+const int ledPin2 = 3;
+const int ledPin1 = 1;
+const int BotonFisico=23;
 
-//PINES
-const int input = 21;
-const int output1 = 22; //NPN
-const int output2 = 23; //PNP
+bool lastButtonState = HIGH;
+bool currentButtonState = HIGH;
+bool ledState = false;
+unsigned long lastDebounceTime = 0;
+unsigned long debounceDelay = 50;
 
-//VARIABLES DE CONTROL
-int change = 0;
-
-void CCPINCONFIG(){
-    pinMode(input, INPUT);
-    pinMode(output1, OUTPUT);
-    pinMode(output2, OUTPUT);
+void setup() {
+  pinMode(ledPin1, OUTPUT);
+  pinMode(ledPin2, OUTPUT);
+  pinMode(buttonPin, INPUT_PULLUP);
 }
 
-void CCEXE(){
-    digitalRead(input);
-    //Direccion 1
-    if(input == 1 && change == 0){
-        digitalWrite(output1, HIGH); //NPN
-        digitalWrite(output2, HIGH); //PNP
-        delay(5000);  
-        change = 1;
-        digitalWrite(output1, LOW); //NPN
-        digitalWrite(output2, HIGH); //PNP
+void loop() {
+  int reading = digitalRead(buttonPin);
+  
+  if (reading != lastButtonState) {
+    lastDebounceTime = millis();
+  }
+  
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading != currentButtonState) {
+      currentButtonState = reading;
+      
+      if (currentButtonState == LOW) {
+        ledState = !ledState;
+        
+        if (ledState) {
+          digitalWrite(ledPin1, HIGH);
+          digitalWrite(ledPin2, LOW);
+          delay(2000);
+          digitalWrite(ledPin1, LOW);
+          digitalWrite(ledPin2, LOW);
+        } else {
+          digitalWrite(ledPin1, LOW);
+          digitalWrite(ledPin2, HIGH);
+          delay(2000);
+          digitalWrite(ledPin1, LOW);
+          digitalWrite(ledPin2, LOW);
+        }
+      }
     }
-    //Direccion 2
-    if(input == 1 && change == 1){
-        digitalWrite(output1, LOW);  //NPN
-        digitalWrite(output2, LOW); //PNP
-        delay(5000);  
-        change = 0;
-        digitalWrite(output1, LOW); //NPN
-        digitalWrite(output2, HIGH); //PNP
-    }
-}
-
+  }
+  
+  lastButtonState = reading;
+} 
