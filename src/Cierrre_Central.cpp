@@ -1,6 +1,8 @@
+#include <Arduino.h>
+
 const int ledPin2 = 3;
 const int ledPin1 = 1;
-const int BotonFisico=23;
+const int buttonPin = 23;
 
 bool lastButtonState = HIGH;
 bool currentButtonState = HIGH;
@@ -8,13 +10,13 @@ bool ledState = false;
 unsigned long lastDebounceTime = 0;
 unsigned long debounceDelay = 50;
 
-void setup() {
+void CCCONFIG() {
   pinMode(ledPin1, OUTPUT);
   pinMode(ledPin2, OUTPUT);
   pinMode(buttonPin, INPUT_PULLUP);
 }
 
-void loop() {
+void CCEXE() {
   int reading = digitalRead(buttonPin);
   
   if (reading != lastButtonState) {
