@@ -92,6 +92,8 @@ void TaskWebSocketManager(void *pvParameters);
 void setup() {
   Serial.begin(115200);
 
+  configurarSistema();
+
   // --- Configuración del módulo Buzzer ---
   configurarBuzzer();
 
@@ -171,6 +173,8 @@ void loop() {
     /*webSocketUltra.loop(); 
     delay(1); // Da un respiro de 1ms al sistema operativo para manejar la pila de red
     webSocketGPS.loop(); */
+
+    ejecutarSistema();
 
     // ---CIERRE CENTRAL---
     CCEXE();
