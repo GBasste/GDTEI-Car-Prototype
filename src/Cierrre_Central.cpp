@@ -10,7 +10,7 @@ bool ledState = false;
 unsigned long lastDebounceTime = 0;
 unsigned long debounceDelay = 50;
 
-void CCCONFIG() {
+void CCPINCONFIG() {
   pinMode(ledPin1, OUTPUT);
   pinMode(ledPin2, OUTPUT);
   pinMode(buttonPin, INPUT_PULLUP);

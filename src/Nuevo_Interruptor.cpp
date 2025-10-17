@@ -6,8 +6,8 @@ const int huella_on = 4;    // Pulso ON (HIGH al detectar)
 const int salida_rele = 35; // Salida al Relé (LOW para activar, HIGH para desactivar)
 
 // Definiciones de Estado del Relé
-const int RELE_ACTIVADO = HIGH;
-const int RELE_DESACTIVADO = LOW;
+const int RELE_ACTIVADO = LOW;
+const int RELE_DESACTIVADO = HIGH;
 
 // Variable de estado del relé (mantener seguimiento)
 static int estadoRele = RELE_DESACTIVADO; 
