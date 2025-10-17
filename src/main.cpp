@@ -53,9 +53,6 @@ const long interval_ultrasonic = 250; // Intervalo para leer y enviar datos (250
 const long interval_gps_send = 500; // Enviar datos GPS solo cada 1.5 segundos
 unsigned long previousMillisGPS = 0;
 
-unsigned long previousMillis_pwm = 0;
-bool decelerated = false; // Bandera para controlar el ciclo de PWM
-
 // Declaración de funciones de Nuevo_Interruptor.cpp ---
 void configurarSistema();
 void ejecutarSistema();
