@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-const int boton = 0;
+const int boton = 2;
 const int huella = 4;
 const int salida = 35;
 
