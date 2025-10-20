@@ -6,10 +6,10 @@
 
 
 // --- Configuración de WiFi ---
-const char* ssid = "Airtel-E5573-7A7B"; // Red WiFi
-const char* password = "9f12i2f2";      // Contraseña WiFi
-//const char* ssid = "LIB-9227236"; // Red WiFi
-//const char* password = "JtxfsD5tc9vw";      // Contraseña WiFi
+//const char* ssid = "Airtel-E5573-7A7B"; // Red WiFi
+//const char* password = "9f12i2f2";      // Contraseña WiFi
+const char* ssid = "LIB-9227236"; // Red WiFi
+const char* password = "JtxfsD5tc9vw";      // Contraseña WiFi
 int espera = 0;
 
 // --- DEFINICIÓN GLOBAL DE LA CONFIGURACIÓN DEL SERVIDOR ---
@@ -45,14 +45,14 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   }
 }
 
-// Variables de temporización no bloqueante
+// VARIABLES DE TEMPORIZACION NO BLOQUEANTE
+//---Ultrasonicos---
 unsigned long previousMillis = 0;
 const long interval_ultrasonic = 250; // Intervalo para leer y enviar datos (250ms = 4 veces/seg)
-
+//---GPS---
 // *Asume que el Ultra se ejecuta cada 1000ms (1s)*
 const long interval_gps_send = 500; // Enviar datos GPS solo cada 1.5 segundos
 unsigned long previousMillisGPS = 0;
-
 //Temporizador de avdc
 unsigned long previousMillisVoltaje = 0;
 // Leer el voltaje cada 1 segundo (1000ms) es suficiente
@@ -62,34 +62,30 @@ const long interval_voltaje = 1000;
 void configurarSistema();
 void ejecutarSistema();
 
-// --- DECLARACIONES DE FUNCIONES DE BuzzerControl.cpp ---
-void configurarBuzzer();
-void beepSimple(float duration);
-// ... (pegar el resto de las declaraciones aquí)
-void cleanupBuzzer();
-
+//DECLARACION DE FUNCIONES
 // --- DECLARACIONES DE FUNCIONES DE GPSControl.cpp ---
 void inicializarGPS();
 void ejecutarGPS();
-//void loopWebSocketGPS();
-
-// --- DECLARACIONES DE FUNCIONES DE VoltageMonitor.cpp ---
+// ---avdc.cpp ---
 void configurarComponentes();
 void medirVoltajeYControlarRele();
-// -------------------------------------------------------
-
 // --- ULTRASONICO ---
 void configurarUltrasonico();
 void ejecutarUltrasonico();
 //void loopWebSocketUltra();
-
-// ---ALARMA ---
-void alarm();
-
 // ---CIERRE CENTRAL---
 void CCPINCONFIG();
 void CCEXE();
-
+// ---ALARMA ---
+void alarm();
+// --- Alarma.cpp---
+//void configurarBuzzer();
+//void beepSimple(float duration);
+//void beepTone();
+//void playNote();
+//void playMelody();
+//void playMarioTheme();
+//void cleanupBuzzer();
 // ✅ DECLARACIÓN DE LA FUNCIÓN DE LA TAREA
 void TaskWebSocketManager(void *pvParameters); 
 
@@ -99,12 +95,11 @@ void setup() {
 
     // 1. Inicialización de sistema y periféricos
     configurarSistema(); // Contiene Serial.begin() y pinModes del relé
-    configurarBuzzer();
     configurarUltrasonico(); // Inicializa la configuración de pines del Ultra (solo una vez)
     inicializarGPS(); // Inicializa el puerto Serial2 para la comunicación con el GPS
     configurarComponentes(); // Inicializar el ADC y el pin del relé/voltaje
     CCPINCONFIG(); // Inicialización de pines del Cierre Central
-
+    //configurarBuzzer();
     // --- Configuración de WiFi (SOLO UNA VEZ) ---
     Serial.print("Conectando a WiFi...");
     WiFi.begin(ssid, password);
@@ -180,7 +175,7 @@ void loop() {
         ejecutarGPS(); 
     }
     // 6. alarm()
-    alarm();
+    //alarm();
 
     // No se necesita ningún delay() aquí.
 }
