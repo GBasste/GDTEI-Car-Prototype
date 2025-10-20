@@ -75,9 +75,4 @@ void medirVoltajeYControlarRele() {
         // DESACTIVAR relé (HIGH) - digitalWrite(rele, 1)
         digitalWrite(RELE_PIN, HIGH); 
     }
-
-    // 5. Espera (equivalente a time.sleep(0.5))
-    // NOTA: Es importante que el delay lo pongas en tu loop() principal, 
-    // pero lo incluimos aquí si decides llamar esta función en el loop() de tu main.
-    delay(500); // 0.5 segundos
 }

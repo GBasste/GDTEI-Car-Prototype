@@ -53,6 +53,11 @@ const long interval_ultrasonic = 250; // Intervalo para leer y enviar datos (250
 const long interval_gps_send = 500; // Enviar datos GPS solo cada 1.5 segundos
 unsigned long previousMillisGPS = 0;
 
+//Temporizador de avdc
+unsigned long previousMillisVoltaje = 0;
+// Leer el voltaje cada 1 segundo (1000ms) es suficiente
+const long interval_voltaje = 1000;
+
 // Declaración de funciones de Nuevo_Interruptor.cpp ---
 void configurarSistema();
 void ejecutarSistema();
@@ -90,30 +95,35 @@ void TaskWebSocketManager(void *pvParameters);
 
 // Función setup()
 void setup() {
-  Serial.begin(115200);
+    Serial.begin(115200);
 
-  configurarSistema();
+    // 1. Inicialización de sistema y periféricos
+    configurarSistema(); // Contiene Serial.begin() y pinModes del relé
+    configurarBuzzer();
+    configurarUltrasonico(); // Inicializa la configuración de pines del Ultra (solo una vez)
+    inicializarGPS(); // Inicializa el puerto Serial2 para la comunicación con el GPS
+    configurarComponentes(); // Inicializar el ADC y el pin del relé/voltaje
+    CCPINCONFIG(); // Inicialización de pines del Cierre Central
 
-  // --- Configuración del módulo Buzzer ---
-  configurarBuzzer();
-
-  // Conexión WiFi (MANTENER AQUÍ PARA QUE SEA ÚNICA)
+    // --- Configuración de WiFi (SOLO UNA VEZ) ---
     Serial.print("Conectando a WiFi...");
     WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED && espera <=20 ) {
+    int espera = 0; // Se debe inicializar dentro de setup o fuera de loop
+    while (WiFi.status() != WL_CONNECTED && espera < 20 ) { // Usamos `< 20`
         delay(500);
         Serial.print(".");
         espera++;
-        if(espera == 20 && WiFi.status() == WL_CONNECTED){
-          Serial.println("\nWiFi conectado!");
-          Serial.print("Dirección IP: ");
-          Serial.println(WiFi.localIP());
-        }
-        if (espera == 20 && WiFi.status() != WL_CONNECTED){
-          Serial.println("\nNo se pudo establecer conexion WiFi");
-        }
     }
-    // ---------------------------
+
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\nWiFi conectado!");
+        Serial.print("Dirección IP: ");
+        Serial.println(WiFi.localIP());
+    } else {
+        Serial.println("\nNo se pudo establecer conexion WiFi.");
+        // Considerar lógica de fallback o reiniciar aquí si es crítico.
+    }
+    // -------------------------------------------
 
     // *AJUSTE CRÍTICO: CONEXIÓN DE WEBSOCKETS AQUÍ*
     Serial.println("[WS] Inicializando clientes WebSocket...");
@@ -121,59 +131,28 @@ void setup() {
     // Conexión Ultra
     webSocketUltra.begin(nodeRed_host, nodeRed_port, ws_path_ultra);
     webSocketUltra.onEvent(webSocketEvent);
-    webSocketUltra.setReconnectInterval(5000); // Reintenta cada 5s
+    webSocketUltra.setReconnectInterval(5000); 
     
     // Conexión GPS
     webSocketGPS.begin(nodeRed_host, nodeRed_port, ws_path_gps);
     webSocketGPS.onEvent(webSocketEvent);
-    webSocketGPS.setReconnectInterval(5000); // Reintenta cada 5s
+    webSocketGPS.setReconnectInterval(5000); 
 
     // 2. CREAR TAREA PARA GESTIONAR LA CONEXIÓN WEBSOCKETS EN EL CORE 0
-    // Asignamos 4KB de stack (memoria) y la prioridad 1
     xTaskCreatePinnedToCore(
-        TaskWebSocketManager,   /* Función que implementa la tarea */
-        "WebSocketTask",        /* Nombre de la tarea */
-        4096,                   /* Tamaño de la pila (Stack) */
-        NULL,                   /* Parámetro de la tarea */
-        1,                      /* Prioridad de la tarea */
-        NULL,                   /* Handle de la tarea (no necesario aquí) */
-        0);                     /* ¡CRÍTICO! Pinned a Core 0 (el núcleo de red) */
+        TaskWebSocketManager, 
+        "WebSocketTask", 
+        4096, 
+        NULL, 
+        1, 
+        NULL, 
+        0); 
 
     Serial.println("[WS] Tarea de red iniciada en Core 0.");
-  
-  // Inicializa la configuración de pines del Ultra
-  configurarUltrasonico();
-
-  // Inicializa el puerto Serial2 para la comunicación con el GPS
-  inicializarGPS();
-
-  // Inicializar el ADC y el pin del relé
-  configurarComponentes(); 
-
-  // ---CIERRE CENTRAL---
-  CCPINCONFIG();
-
-  // Conexión WiFi
-  Serial.print("Conectando a WiFi...");
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nWiFi conectado!");
-  Serial.print("Dirección IP: ");
-  Serial.println(WiFi.localIP());
-  // ---------------------------
-
-  //Ultrasonicos
-  configurarUltrasonico();
 }
 
 void loop() {
-    /*webSocketUltra.loop(); 
-    delay(1); // Da un respiro de 1ms al sistema operativo para manejar la pila de red
-    webSocketGPS.loop(); */
-
+    // ---Interruptor---
     ejecutarSistema();
 
     // ---CIERRE CENTRAL---
@@ -187,8 +166,11 @@ void loop() {
         ejecutarUltrasonico(); 
     }
 
-    // 3. Control de Voltaje
-    medirVoltajeYControlarRele(); 
+    // 3. ✅ Control de Voltaje (AHORA NO BLOQUEANTE)
+    if (currentMillis - previousMillisVoltaje >= interval_voltaje) {
+        previousMillisVoltaje = currentMillis;
+        medirVoltajeYControlarRele(); // Ahora se ejecuta cada 1s sin bloquear.
+    }
     
     // 4. Lógica GPS (limitada por tiempo)
     if (currentMillis - previousMillisGPS >= interval_gps_send) {

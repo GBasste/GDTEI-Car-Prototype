@@ -1,9 +1,9 @@
 #include <Arduino.h>
 
 // Definiciones de Pines
-const int boton_off = 2;    // Botón OFF (N/O: HIGH al presionar)
+const int boton_off = 15;    // Botón OFF (N/O: HIGH al presionar)
 const int huella_on = 4;    // Pulso ON (HIGH al detectar)
-const int salida_rele = 15; // Salida al Relé (LOW para activar, HIGH para desactivar)
+const int salida_rele = 25; // Salida al Relé (LOW para activar, HIGH para desactivar)
 
 // Definiciones de Estado del Relé
 const int RELE_ACTIVADO = LOW;
@@ -96,6 +96,12 @@ void ejecutarSistema() {
         
         // Actualizar el tiempo de la última revisión de debounce
         ultimoTiempoDebounce = millis();
+
+        // --- AÑADE ESTA LÍNEA PARA DEPURAR ---
+        // Esto solo se imprimirá cada 50ms
+        Serial.printf("[DEBUG PINS] Boton OFF: %d, Huella ON: %d, Rele State: %d\n", 
+                      lecturaBotonOff, lecturaHuellaOn, estadoRele);
+        // ------------------------------------
     }
 
     // --- Procesamiento de Comandos Seriales (No requiere Debounce) ---

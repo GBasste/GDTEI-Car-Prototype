@@ -2,7 +2,7 @@
 
 // Pines para el zumbador y el LED (constantes globales)
 const int BUZZER_PIN = 27;
-const int LED_PIN = 14;
+const int LED_PIN = 13;
 
 // Configuraciones del canal PWM (LEDC en ESP32)
 #define BUZZER_CHANNEL 0
