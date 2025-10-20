@@ -6,10 +6,10 @@
 
 
 // --- Configuración de WiFi ---
-//const char* ssid = "Airtel-E5573-7A7B"; // Red WiFi
-//const char* password = "9f12i2f2";      // Contraseña WiFi
-const char* ssid = "LIB-9227236"; // Red WiFi
-const char* password = "JtxfsD5tc9vw";      // Contraseña WiFi
+const char* ssid = "Airtel-E5573-7A7B"; // Red WiFi
+const char* password = "9f12i2f2";      // Contraseña WiFi
+//const char* ssid = "LIB-9227236"; // Red WiFi
+//const char* password = "JtxfsD5tc9vw";      // Contraseña WiFi
 int espera = 0;
 
 // --- DEFINICIÓN GLOBAL DE LA CONFIGURACIÓN DEL SERVIDOR ---
@@ -76,17 +76,7 @@ void ejecutarUltrasonico();
 // ---CIERRE CENTRAL---
 void CCPINCONFIG();
 void CCEXE();
-// ---ALARMA ---
-void alarm();
-// --- Alarma.cpp---
-//void configurarBuzzer();
-//void beepSimple(float duration);
-//void beepTone();
-//void playNote();
-//void playMelody();
-//void playMarioTheme();
-//void cleanupBuzzer();
-// ✅ DECLARACIÓN DE LA FUNCIÓN DE LA TAREA
+
 void TaskWebSocketManager(void *pvParameters); 
 
 // Función setup()
@@ -99,7 +89,6 @@ void setup() {
     inicializarGPS(); // Inicializa el puerto Serial2 para la comunicación con el GPS
     configurarComponentes(); // Inicializar el ADC y el pin del relé/voltaje
     CCPINCONFIG(); // Inicialización de pines del Cierre Central
-    //configurarBuzzer();
     // --- Configuración de WiFi (SOLO UNA VEZ) ---
     Serial.print("Conectando a WiFi...");
     WiFi.begin(ssid, password);
@@ -174,8 +163,6 @@ void loop() {
         // Esta función llama a la lectura Serial del GPS y al envío webSocketGPS.sendTXT()
         ejecutarGPS(); 
     }
-    // 6. alarm()
-    //alarm();
 
     // No se necesita ningún delay() aquí.
 }
