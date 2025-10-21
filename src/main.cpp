@@ -48,7 +48,7 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
 // VARIABLES DE TEMPORIZACION NO BLOQUEANTE
 //---Ultrasonicos---
 unsigned long previousMillis = 0;
-const long interval_ultrasonic = 250; // Intervalo para leer y enviar datos (250ms = 4 veces/seg)
+const long interval_ultrasonic = 100; // Intervalo para leer y enviar datos (250ms = 4 veces/seg)
 //---GPS---
 // *Asume que el Ultra se ejecuta cada 1000ms (1s)*
 const long interval_gps_send = 500; // Enviar datos GPS solo cada 1.5 segundos

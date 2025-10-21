@@ -88,11 +88,11 @@ void ejecutarUltrasonico() {
   
   // CAMBIO CRÍTICO: Envía SIEMPRE que haya conexión, sin importar si los 
   // valores son negativos o cero. Node-RED puede manejar el -1.0.
-  if (webSocketUltra.isConnected()) {
+  /*if (webSocketUltra.isConnected()) {
       sendData(front, back); 
-  }
-
-  /*if (front > 0 && back > 0 && webSocketUltra.isConnected()) {
-    sendData(front, back);
   }*/
+
+  if (front > 0 && back > 0 && webSocketUltra.isConnected()) {
+    sendData(front, back);
+  }
 }
