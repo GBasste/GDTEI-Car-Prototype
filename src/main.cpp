@@ -66,6 +66,7 @@ void ejecutarSistema();
 // --- DECLARACIONES DE FUNCIONES DE GPSControl.cpp ---
 void inicializarGPS();
 void ejecutarGPS();
+void sendGPSData();
 // ---avdc.cpp ---
 void configurarComponentes();
 void medirVoltajeYControlarRele();
@@ -78,6 +79,7 @@ void CCPINCONFIG();
 void CCEXE();
 
 void TaskWebSocketManager(void *pvParameters); 
+void TaskGPSReader(void *pvParameters); // ✅ NUEVA TAREA GPS
 
 // Función setup()
 void setup() {
@@ -132,7 +134,19 @@ void setup() {
         NULL, 
         0); 
 
-    Serial.println("[WS] Tarea de red iniciada en Core 0.");
+    Serial.println("[WS] Tarea de red iniciada en Core 0.");\
+
+    // 3. ✅ CREAR TAREA PARA LECTURA DEL GPS EN EL CORE 1
+    xTaskCreatePinnedToCore(
+        TaskGPSReader, 
+        "GPSReaderTask", 
+        4096, 
+        NULL, 
+        2, // Prioridad más alta que la WebSocket Task (si es necesaria)
+        NULL, 
+        1); // ✅ Core 1
+        
+    Serial.println("[GPS] Tarea de lectura GPS iniciada en Core 1.");
 }
 
 void loop() {
@@ -161,7 +175,7 @@ void loop() {
         previousMillisGPS = currentMillis;
         
         // Esta función llama a la lectura Serial del GPS y al envío webSocketGPS.sendTXT()
-        ejecutarGPS(); 
+        sendGPSData();
     }
 
     // No se necesita ningún delay() aquí.
@@ -183,5 +197,29 @@ void TaskWebSocketManager(void *pvParameters) {
         // Es crucial dar un pequeño 'sleep' a la tarea
         // para que otras tareas de red puedan ejecutarse.
         vTaskDelay(pdMS_TO_TICKS(1)); // Duerme 5ms, permitiendo que el SO ejecute otras cosas
+    }
+}
+// ------------------------------------------
+// TAREA DE LECTURA Y PARSEO GPS EN CORE 1
+// ------------------------------------------
+void TaskGPSReader(void *pvParameters) {
+    (void) pvParameters; 
+    Serial.println("Core 1: Tarea GPS Reader ejecutándose.");
+    
+    // Este intervalo es solo para evitar el bloqueo total, 
+    // pero la lectura del Serial2 será muy rápida
+    const TickType_t xDelay = pdMS_TO_TICKS(10); // Pausa de 10ms
+
+    for (;;) {
+        // Ejecuta la lectura del puerto Serial2 y el parseo (NO EL ENVÍO)
+        // La función ejecutarGPS() maneja la lectura de la UART
+        ejecutarGPS(); 
+        
+        // El envío a Node-RED se manejará por un temporizador dentro del loop()
+        // o se modificará ejecutarGPS() para que no envíe el NMEA crudo.
+        
+        // La lectura del serial debe ocurrir tan rápido como sea posible.
+        // Si no se lee nada, la tarea duerme un poco para no acaparar el núcleo.
+        vTaskDelay(xDelay); 
     }
 }
